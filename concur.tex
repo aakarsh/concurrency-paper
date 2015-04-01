@@ -17,7 +17,7 @@
 \tolerance=1000
 \providecommand{\alert}[1]{\textbf{#1}}
 
-\title{Linux Concurrency Implementation on x86}
+\title{Synchronization in Linux}
 \author{Aakarsh Nair}
 \date{\today}
 
@@ -34,6 +34,90 @@
 
 \vspace*{1cm}
 \section{Introduction}
+
+\section{Linux Kernel Synchronization}
+
+
+The linux kernel provides several synchronization primitives these include
+
+\begin{itemize}
+\item \textbf{Per-CPU variables}
+  Use duplicate data structures for each cpu
+\item \textbf{Atomic Operations}
+  Attomically read-modify-write instruction to a counter
+\item \textbf{Memory Barrier}
+  Avoid instruction reordering
+\item  \textbf{Spinlock}
+  Lock with a busy wait
+\item \textbf{Semaphores}
+  Lock with blocking wait/sleep.
+\item \textbf{Seqlocks}
+  Lock based on access counter
+\item \textbf{Local interrupt disabling}
+  Forbid interrupt handling on a single CPU
+\item \textbf{Local softirq disabling}
+  Forbid deferrable function handling on a single CPU
+\item \textbf{Read Copy Update}
+  Lock free access to shared data structures using pointers
+\end{itemize}
+
+
+\subsection{Per-CPU Variables}
+
+A per-CPU variable is an array of datastructures one per cpu. Each CPU
+can read and modify its own elements without race. 
+
+These are aligned in main memory so that each one falls in different
+line of hardware cache. Concurrent access does not lead to cache line
+snooping and invalidation.
+
+Though per-cpu variables allow for data structures to be protected
+against different CPUS they cannot be used to protect against
+asynchronous accesses coming through the same CPU.
+
+Accessing a per-CPU variable needs to be aware that premption might
+cause the process to get migrated onto another CPU and thus it might
+be advisable to turn off preemptions for per CPU variables.
+
+
+\begin{center}
+  \begin{tabular}{ l | l }
+    
+    \hline
+    Function/Macors & Descriptions \\ \hline
+    DEFINE\_PER\_CPU(type,name) & Statically Allocate a per-CPU called type \\ 
+    per\_cpu(name,cpu) & Selects element for CPU cpu \\ 
+    get\_cpu\_var(name) &  Disables kernel premeption \\
+    put\_cpu\_var(name) &  Re-enables kernel premeption \\
+    alloc\_percpu(ptr) &  dynamcally allocatee cpu variable \\
+    free\_percpu(ptr) &  Release a dynamcally allocated cpu variable \\
+    \hline
+  \end{tabular}
+\end{center}
+
+\subsection{Atomic Operations}
+
+Atomic read-modify-write instructions are executed atomically by a CPU
+hardware via a single instruction which is executed without
+interruptions by other CPUs.
+
+\subsubsection{Atomic Operations 80x86}
+
+\begin{itemize}
+  \item 
+\end{itemize}
+
+
+
+
+\subsection{Memory Barrier}
+
+
+
+
+\subsection{Spinlock}
+
+\subsection{Semaphores}
 
 
 \section{MESI Cache Coherency Protocol}
@@ -77,6 +161,20 @@ Two bits are added to each ache line which represent the four states that a cach
  \bibitem{atomic-operations}
    \textit{Atomic Operations - CSE 378 University of Washington} \\
   \url{http://courses.cs.washington.edu/courses/cse378/07au/lectures/L25-Atomic-Operations.pdf}
+\bibitem{memory-barriers}
+  \textit{Linux Kernel Memory Barriers}
+  \url{https://www.kernel.org/doc/Documentation/memory-barriers.txt}
+\bibitem{columbia-sync-linux}
+  \textit{Synchronization in Linux}
+  \url{http://www.cs.columbia.edu/~junfeng/10sp-w4118/lectures/l11-synch-linux.pdf}
+
+\bibitem{under-linux-kernel-sync}
+  \textit{Understanding the Linux Kernel - Chapter 5} \\
+  \textit{David Bovet and Marco Cesati}  
+
+\bibitem{sadc}  
+  \textit{Structures and Design of Computers } \\
+  \textit{David E. Patterson and J.L. Hennessey} 
   
 
 \end{thebibliography}
