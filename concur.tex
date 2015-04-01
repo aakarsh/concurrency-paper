@@ -104,14 +104,76 @@ interruptions by other CPUs.
 \subsubsection{Atomic Operations 80x86}
 
 \begin{itemize}
-  \item 
+  \item Read-modify-write assembly instructions such as inc and dec
+    that read data from memory and update it are atomic , provided
+    stale data has not been read by another processor. This is the
+    case in uniprocessor systems.
+
+  \item Read-modify-write instructions whose opcode is prefixed by the
+    \emph{lock byte} (\emph{0xf0}) are atomic on multiprocessor
+    systems.  The lock byte will lock access to the mememory bus until
+    the locking instruction finishes its operation.
+  \item Instructions prefixed by the \emph{rep} byte \emph{0xf2,0xf3}
+    which forces instructions to be repeated are not atomic since the
+    CPU checks interrupts before each iteration.
+
 \end{itemize}
-
-
 
 
 \subsection{Memory Barrier}
 
+Performance optimizations of compilers and CPUs play havoc with
+synchronization primitives. These include compiler reordering
+instructoins to optimize register usage, CPUs executing instructions
+in parallel, reordering memory accesses.
+
+
+\begin{itemize}
+
+\item{Optimization barrier} Can be implemented using the
+  \emph{barrier()} macro expanding to \emph{asm volatile"":::memory}
+
+  Tells the compiler to insert empty assembly fragment. While the
+  volatile keyword forbids the compiler from shuffling the
+  instruction.  The memory keyword forces the compiler to use memory
+  locations instead of those stored in the register. The CPU can still
+  mix assembly instruction
+  
+\item{Memory barrier}
+
+  In 80x86 list of serializing instructions which act as memory
+  barriers:
+
+
+  \begin{itemize}
+    \item I/O port operations
+    \item instructions with lock byte
+    \item instructions affecting the IF flag in eflags register such as those instructions which write to registers
+      \begin{itemize}
+        \item control registers (cli)
+        \item system  registers (sti)
+        \item debug   registers          
+      \end {itemize}
+    \item Some instructions introduced in Pentium 4
+      \begin{itemize}
+        \item lfence - read barriers
+        \item sfence - write barries
+        \item mfence - read write barriers
+      \end{itemize}
+    \item Speial instructions - iret terminating interrupt or exception handler                  
+  \end{itemize}
+  
+\end{itemize}
+
+Read barriers maintain the serial order of read instructions, write
+barriers maitain serial order of write instructions while read write
+barriers 
+
+
+\subsubsection{Compiler Reordering Prevention}
+
+
+\subsection{CPU Reordering  Prevention}
 
 
 
