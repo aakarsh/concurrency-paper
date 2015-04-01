@@ -1,0 +1,72 @@
+% Created 2014-04-04 Fri 19:09
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{soul}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\providecommand{\alert}[1]{\textbf{#1}}
+
+\title{Linux Concurrency Implementation on x86}
+\author{Aakarsh Nair}
+\date{\today}
+
+\begin{document}
+
+
+\maketitle
+
+
+\setcounter{tocdepth}{3}
+\tableofcontents
+
+\maketitle
+
+\vspace*{1cm}
+\section{Introduction}
+
+
+\section{MESI Cache Coherency Protocol}
+
+The MESI protocol is a protocol used to implement cache and memory coherency amongst multiple CPUs. \cite{Birdetal2001}
+
+Two bits are added to each ache line which represent the four states that a cache line can be in. These are
+
+\begin{itemize}
+\item Modified
+  \begin{itemize}
+    \item Cache Line is present only on current CPU
+    \item Cache Line has been modified
+    \item Write back needs to be performed
+  \end{itemize}
+
+
+\item Exclusive
+    \begin{itemize}
+    \item Cache Line is present only in current CPU
+    \item Cache Line is cliean (matches main memory)
+    \end{itemize}
+    
+  \item Shared
+    \begin{itemize}
+    \item Cache Line is present in multiple CPUs
+    \item Cache Line is Clean (matches main memory)
+    \end{itemize}
+  \item Invalid 
+\end{itemize}
+
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
