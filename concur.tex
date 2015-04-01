@@ -166,18 +166,43 @@ in parallel, reordering memory accesses.
 \end{itemize}
 
 Read barriers maintain the serial order of read instructions, write
-barriers maitain serial order of write instructions while read write
-barriers 
+barriers maitain serial order of write instructions.
 
+\begin{center}
+  \begin{tabular}{ l | l }    
+    \hline
+    Function/Macors & Description \\ \hline
+    mb() & Memory barrier for MP and UP \\ 
+    rmb() & Read memory barrier for MP and UP  \\ 
+    wmb() &  Write memory barrier for MP and UP \\
+    smp\_mb() &  Memory barrier for MP only \\
+    smp\_rmb() &  Read memory barrier for MP only \\
+    smp\_wmb() &  Write memory barrier for MP only \\
+    \hline
+  \end{tabular}
+\end{center}
+  Macro expansions on  80x86
 
-\subsubsection{Compiler Reordering Prevention}
+  \begin{center}
+  \begin{tabular}{ l | l }    
+    \hline
+    Function/Macors & Description \\ \hline
+    mb() &  \\ 
+    rmb() & asm volatile ("lfence") or asm volatile ("lock;addl 0,0(\%\%esp)":::"memory")  \\ 
+    wmb() & barrier()- intel never reorders write memory access only need an optimization barrier  \\
+    smp\_mb() &   \\
+    smp\_rmb() &  \\
+    smp\_wmb() &  \\
+    \hline
+  \end{tabular}
+\end{center}
 
-
-\subsection{CPU Reordering  Prevention}
-
-
+All atomic operaitions act as memory barriers since they use the lock byte.
 
 \subsection{Spinlock}
+
+
+
 
 \subsection{Semaphores}
 
