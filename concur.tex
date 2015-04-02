@@ -14,6 +14,8 @@
 \usepackage{latexsym}
 \usepackage{amssymb}
 \usepackage{hyperref}
+\usepackage{listings}
+
 \tolerance=1000
 \providecommand{\alert}[1]{\textbf{#1}}
 
@@ -22,7 +24,7 @@
 \date{\today}
 
 \begin{document}
-
+\lstset{language=C}  
 
 \maketitle
 
@@ -36,9 +38,38 @@
 
 \section{Introduction}
 
-\section{Linux Kernel Synchronization}
 
-The linux kernel provides several synchronization primitives these include
+Syncronization becomes necessary when the outcome of of a computation
+depends on how two or more interleaved kernel control paths are
+nested. Critical regions are parts of code that must be executed by at
+most one kernel coltrol path to completion before another kernel
+control path is allowed to execute it.
+
+\section{Kernel Preemption}
+
+Process running in Kernel Mode can be replaced by another
+process. Process switches happens via the \lstinline{switch_to_macro}.
+
+Kernel premption is enabled and disabled via the
+\lstinline{prempt_count} in the \lstinline{thread_info}.
+
+It is greater than zero if 
+
+\begin{itemize}
+\item The kernel is executing in an interrupt service routine.
+\item kernel is executing a tasklet of a softirq
+\item kernel preemption has been explictly disabled setting it to a
+  positive value
+\end{itemize}
+
+
+
+
+\section{Kernel Syncrhonization Primitives}
+
+
+The linux kernel provides several synchronization primitives these
+include
 
 \begin{itemize}
 \item \textbf{Per-CPU variables}
@@ -65,7 +96,7 @@ The linux kernel provides several synchronization primitives these include
 \subsection{Per-CPU Variables}
 
 A per-CPU variable is an array of datastructures one per cpu. Each CPU
-can read and modify its own elements without race. 
+can read and modify its own elements without race.
 
 These are aligned in main memory so that each one falls in different
 line of hardware cache. Concurrent access does not lead to cache line
@@ -122,10 +153,34 @@ interruptions by other CPUs.
 
 \subsection{Memory Barrier}
 
-Performance optimizations of compilers and CPUs play havoc with
-synchronization primitives. These include compiler reordering
-instructoins to optimize register usage, CPUs executing instructions
-in parallel, reordering memory accesses.
+
+Memory barriers provide a way to instruct the compiler and CPU to
+restrict the order in which instructions are executed. Performance
+optimizations of compilers and CPUs play havoc with synchronization
+primitives. These include compiler reordering instructoins to optimize
+register usage, CPUs executing instructions in parallel, reordering
+memory accesses.
+
+
+Types of performance tricks memory barriers may protect against are
+\begin{itemize}
+\item reordering and defferral of combination of memory operations
+\item sepculative loads
+\item sepculative branch prediction and caching
+\end{itemize}
+
+Memroy barrier types include
+\begin{itemize}
+\item Write (or store) memory barrier
+\item Data dependency barrier
+\item Read (or load) memory barrier
+\item General Memory barrier
+\item Implicet Barriers
+  \begin{itemize}
+  \item ACQUIRE operations
+  \item RELEASE operations
+  \end{itemize}
+\end{itemize}
 
 
 \begin{itemize}
@@ -238,10 +293,10 @@ All atomic operaitions act as memory barriers since they use the lock byte.
       process to release spin lock prematurely
 
     \item Execute the wait cycle
-
-      while(spin\_is\_locked(slp) \&\& slp->break\_lock)
-          cpu\_relax(); // special pause instruction Pentium 4
-
+      \begin{lstlisting}
+      while(spin_is_locked(slp) && slp->break_lock)
+          cpu_relax(); // special pause instruction Pentium 4
+      \end{lstlisting}
     \item Jump back to step 1 
       
   \end{itemize}
