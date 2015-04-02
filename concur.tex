@@ -31,12 +31,12 @@
 \tableofcontents
 
 \maketitle
-
+%%\addcontentsline{toc}
 \vspace*{1cm}
+
 \section{Introduction}
 
 \section{Linux Kernel Synchronization}
-
 
 The linux kernel provides several synchronization primitives these include
 
@@ -201,6 +201,53 @@ All atomic operaitions act as memory barriers since they use the lock byte.
 
 \subsection{Spinlock}
 
+  \begin{center}
+  \begin{tabular}{ l | l }    
+    \hline
+    Function/Macors & Description \\ \hline
+    spin\_lock\_init() & Set spin lock to 1 (unlocked) \\ 
+    spin\_lock() & Cycle until spinlock becomes 1(unlocked) then set it to 0 (locked) \\ 
+    spin\_unlock() & Set the spin lock to 1 (unlocked) \\
+    spin\_unlock\_wait() & Wait until the spinlock becomes 1 (unlocked)  \\
+    spin\_is\_locked() & Return 0 if the spinlock is set to 1(unlocked) ; 1 otherwise  \\
+    spin\_trylock() &  Set the spin lock to 0 (locked), and return 1 if the previous value of the lock was 1; 0 otherwise\\
+    \hline
+  \end{tabular}
+  \end{center}
+
+  \subsubsection{The spin\_lock macro with kernel preemption}
+
+  \begin{itemize}
+    \item Invoke \emph{preeempt\_disable()} dsiable kernel preemption
+    \item Invoke \emph{\_raw\_spin\_trylock()} atomic test and set on
+      spinlock's \emph{slock} field.
+
+      \emph{moveb \$0,\%a1}
+      \emph{xchgb \%a1,slp->slock}
+
+      \emph{xchg} echange atomically content of 8-bit \%a1 with slp->slock.
+      return 1 if old value was positive or 0 otherwise.
+
+    \item If old value of spin lock was positve, we have acquired the spinlock
+        
+    \item If failed then spin lock was not positive , invoke
+      \emph{preempt\_enable()} decrement the preeempt counter. which
+      if it goes to zero willl allow the process to be scheduled out,
+
+    \item set the \emph{break\_lock} field to to one. Allow another
+      process to release spin lock prematurely
+
+    \item Execute the wait cycle
+
+      while(spin\_is\_locked(slp) \&\& slp->break\_lock)
+          cpu\_relax(); // special pause instruction Pentium 4
+
+    \item Jump back to step 1 
+      
+  \end{itemize}
+
+
+  
 
 
 
