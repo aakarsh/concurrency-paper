@@ -25,9 +25,7 @@
 
 \begin{document}
 \lstset{language=C}  
-
 \maketitle
-
 
 \setcounter{tocdepth}{3}
 \tableofcontents
@@ -37,7 +35,6 @@
 \vspace*{1cm}
 
 \section{Introduction}
-
 
 Syncronization becomes necessary when the outcome of of a computation
 depends on how two or more interleaved kernel control paths are
@@ -92,67 +89,52 @@ include
   Lock free access to shared data structures using pointers
 \end{itemize}
 
-
-\subsection{Per-CPU Variables}
-
-A per-CPU variable is an array of datastructures one per cpu. Each CPU
-can read and modify its own elements without race.
-
-These are aligned in main memory so that each one falls in different
-line of hardware cache. Concurrent access does not lead to cache line
-snooping and invalidation.
-
-Though per-cpu variables allow for data structures to be protected
-against different CPUS they cannot be used to protect against
-asynchronous accesses coming through the same CPU.
-
-Accessing a per-CPU variable needs to be aware that premption might
-cause the process to get migrated onto another CPU and thus it might
-be advisable to turn off preemptions for per CPU variables.
+Many of these synchronization constructs depend on implementation of
+atomic operations implementd at the chip level on CPUs. Thus are
+specific to the architecture they are executing on. 
 
 
-\begin{center}
-  \begin{tabular}{ l | l }
-    
-    \hline
-    Function/Macors & Descriptions \\ \hline
-    DEFINE\_PER\_CPU(type,name) & Statically Allocate a per-CPU called type \\ 
-    per\_cpu(name,cpu) & Selects element for CPU cpu \\ 
-    get\_cpu\_var(name) &  Disables kernel premeption \\
-    put\_cpu\_var(name) &  Re-enables kernel premeption \\
-    alloc\_percpu(ptr) &  dynamcally allocatee cpu variable \\
-    free\_percpu(ptr) &  Release a dynamcally allocated cpu variable \\
-    \hline
-  \end{tabular}
-\end{center}
-
-\subsection{Atomic Operations}
-
-Atomic read-modify-write instructions are executed atomically by a CPU
-hardware via a single instruction which is executed without
-interruptions by other CPUs.
-
-\subsubsection{Atomic Operations 80x86}
+\subsection{Processor guarantees}
 
 \begin{itemize}
-  \item Read-modify-write assembly instructions such as inc and dec
-    that read data from memory and update it are atomic , provided
-    stale data has not been read by another processor. This is the
-    case in uniprocessor systems.
+  \item On a particular CPU dependent memory accesses happen in order
+    of issuance.
 
-  \item Read-modify-write instructions whose opcode is prefixed by the
-    \emph{lock byte} (\emph{0xf0}) are atomic on multiprocessor
-    systems.  The lock byte will lock access to the mememory bus until
-    the locking instruction finishes its operation.
-  \item Instructions prefixed by the \emph{rep} byte \emph{0xf2,0xf3}
-    which forces instructions to be repeated are not atomic since the
-    CPU checks interrupts before each iteration.
-
+  \item Overlapping loads and stores within a particular CPU will
+    apear to be ordered within a CPU
+    
 \end{itemize}
 
+Things which cannot be assumed
+
+\begin{itemize}
+\item it \textbf{must not} be assumed that compilers will not reorder
+  memory references not protected with ACCESS\_ONCE(). Without
+  ACCESS\_ONCE() the compiler can perform tranformations see memory
+  barriers.
+\item it \textbf{must not} be assumed that independent loads and
+  stored will be issued in any given order.
+
+\item it \textbf{must not} be assumed that overlapping memroy accesses
+  may be merged or discarded.  
+\end{itemize}
+
+Things that we anti-guarantees(bad stuff will happen):
+
+\begin{itemize}
+\item Compilers will often genrate code to modify bit fields using non
+  atomic read-modify write sequences
+\item All fieds in a given bitfield must be must be protected by one
+  lock. Update of one field can be corrupted by another by compiler.
+  
+\item Gaurantees only apply to properly aligned and sized scalar
+  variables. Same size as "char","short","int" and "long".  
+\end{itemize}
 
 \subsection{Memory Barrier}
 
+Memroy barriers impose perceived partial ordering over memroy
+operations on either side of the barrier.
 
 Memory barriers provide a way to instruct the compiler and CPU to
 restrict the order in which instructions are executed. Performance
@@ -172,8 +154,39 @@ Types of performance tricks memory barriers may protect against are
 Memroy barrier types include
 \begin{itemize}
 \item Write (or store) memory barrier
+
+  A write memory barrier gives gauratnee that all STORE operations
+  specified before the barrier will happen before all STORE operations
+  STORE oeprations specified after the barrier. wrt other components
+  in the system.
+
+  A partial order on STORES only. Does not affect LOADS.
+
+  CPU can be viewed as performing a commit. All stores before the
+  write barrier will occur before all stores after the write barrier.
+
+  Should not be paired with read or data dependency barrier.
+  
 \item Data dependency barrier
+
+  Weaker form of read barrier. Two loads such that the the second
+  depnds on result of first ( first load retreives the address which
+  to which second load is directed). Ensure the target of second load
+  is updated before first load accessed (??)
+
+  Partial ordering on inter-dependent loads only. No effect on
+  independent loads or overlapping loads.
+
+  hmm this is hair raisingly complex topic
+
+  
+  
+
 \item Read (or load) memory barrier
+
+  
+  
+  
 \item General Memory barrier
 \item Implicet Barriers
   \begin{itemize}
@@ -254,6 +267,32 @@ barriers maitain serial order of write instructions.
 
 All atomic operaitions act as memory barriers since they use the lock byte.
 
+\subsection{Atomic Operations}
+
+Atomic read-modify-write instructions are executed atomically by a CPU
+hardware via a single instruction which is executed without
+interruptions by other CPUs.
+
+\subsubsection{Atomic Operations 80x86}
+
+\begin{itemize}
+  \item Read-modify-write assembly instructions such as inc and dec
+    that read data from memory and update it are atomic , provided
+    stale data has not been read by another processor. This is the
+    case in uniprocessor systems.
+
+  \item Read-modify-write instructions whose opcode is prefixed by the
+    \emph{lock byte} (\emph{0xf0}) are atomic on multiprocessor
+    systems.  The lock byte will lock access to the mememory bus until
+    the locking instruction finishes its operation.
+  \item Instructions prefixed by the \emph{rep} byte \emph{0xf2,0xf3}
+    which forces instructions to be repeated are not atomic since the
+    CPU checks interrupts before each iteration.
+
+\end{itemize}
+
+
+
 \subsection{Spinlock}
 
   \begin{center}
@@ -308,6 +347,41 @@ All atomic operaitions act as memory barriers since they use the lock byte.
 
 \subsection{Semaphores}
 
+
+
+
+\subsection{Per-CPU Variables}
+
+A per-CPU variable is an array of datastructures one per cpu. Each CPU
+can read and modify its own elements without race.
+
+These are aligned in main memory so that each one falls in different
+line of hardware cache. Concurrent access does not lead to cache line
+snooping and invalidation.
+
+Though per-cpu variables allow for data structures to be protected
+against different CPUS they cannot be used to protect against
+asynchronous accesses coming through the same CPU.
+
+Accessing a per-CPU variable needs to be aware that premption might
+cause the process to get migrated onto another CPU and thus it might
+be advisable to turn off preemptions for per CPU variables.
+
+
+\begin{center}
+  \begin{tabular}{ l | l }
+    
+    \hline
+    Function/Macors & Descriptions \\ \hline
+    DEFINE\_PER\_CPU(type,name) & Statically Allocate a per-CPU called type \\ 
+    per\_cpu(name,cpu) & Selects element for CPU cpu \\ 
+    get\_cpu\_var(name) &  Disables kernel premeption \\
+    put\_cpu\_var(name) &  Re-enables kernel premeption \\
+    alloc\_percpu(ptr) &  dynamcally allocatee cpu variable \\
+    free\_percpu(ptr) &  Release a dynamcally allocated cpu variable \\
+    \hline
+  \end{tabular}
+\end{center}
 
 \section{MESI Cache Coherency Protocol}
 
