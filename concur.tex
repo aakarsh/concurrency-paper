@@ -517,25 +517,53 @@ protocl.
 
     g & Exclusive & Shared & 
 
-    Some other CPU reads data in this cache line 
+    Some other CPU reads data in this cache line supplied from this
+    CPU or from memory. If this CPU retains a read-only copy. This cpu
+    will respond with a read response with requested data.
     
     \\
     \hline
 
-    h & Shared & Exclusive & k \\
+    h & Shared & Exclusive & 
+
+    This CPU is about to write to shared item. Transmits an invalidate
+    message to other CPUs Waits for full "invlidate acknowledge"
+    repsonse. Or all other CPUs had to drop the cache line making this
+    CPU the sole owner. \\
+    \hline
+    i & Exclusive & Invalid & 
+
+    Another CPU ran an atomic read-modify-write in cache line held by
+    current CPU. Received a "read invalididate". This CPU will respond
+    with a "read response" and "invalidate acknowledge" message.   \\
+
     \hline
 
-    i & Exclusive & Invalid & k \\
+    j & Invalid & Exclusive &
+
+    CPU does a store to data not in cache. Transmits a "read
+    invalidate" message. The CPU must wait for all other processors to
+    "invalidate acknowledge". An expected next state will be
+    "modified"  
+    \\
     \hline
 
-    j & Invalid & Exclusive & k \\
+    k & Invalid & Shared &
+    
+    The CPU loads item not in cache and completes a transition on read
+    a "read response" 
+    \\
+    \hline
+    l & Shared & Invalid &
+    
+    Some ohter cpu does a store to data item. On the reception of a
+    "invalidate" message. Responds with a "invalidate acknowledge"
+    messaage. \\
+
+
     \hline
 
-    k & Invalid & Shared & k \\
-    \hline
 
-    l & Shared & Invalid & k \\
-    \hline
     
   \end{tabular*}
 \end{center}
@@ -559,7 +587,7 @@ protocl.
   \textit{Chapter 13: Other Memory Models}  
   
 \bibitem{mesi-wikipedia} 
-  \textit{MESI protocol} 
+  \textit{MESI protocol}  \\
   \url{http://en.wikipedia.org/wiki/MESI_protocol}
 \bibitem{cache-coherency-primer} 
    \textit{Cache Coherency Primer}  \textit{Fabian “ryg” Giesen} \\
@@ -569,10 +597,11 @@ protocl.
    \textit{Atomic Operations - CSE 378 University of Washington} \\
   \url{http://courses.cs.washington.edu/courses/cse378/07au/lectures/L25-Atomic-Operations.pdf}
 \bibitem{memory-barriers}
-  \textit{Linux Kernel Memory Barriers}
+  \textit{Linux Kernel Memory Barriers} \\
   \url{https://www.kernel.org/doc/Documentation/memory-barriers.txt}
+
 \bibitem{columbia-sync-linux}
-  \textit{Synchronization in Linux}
+  \textit{Synchronization in Linux} \\
   \url{http://www.cs.columbia.edu/~junfeng/10sp-w4118/lectures/l11-synch-linux.pdf}
 
 \bibitem{under-linux-kernel-sync}
@@ -583,6 +612,11 @@ protocl.
   \textit{Structures and Design of Computers } \\
   \textit{David E. Patterson and J.L. Hennessey} 
   
+\bibitem{whymem}
+  \textit{Why memory barriers?}
+  \textit{Paul McKay}
+  \url{http://www.rdrop.com/users/paulmck/scalability/paper/whymb.2010.06.07c.pdf}
+
 
 \end{thebibliography}
 
