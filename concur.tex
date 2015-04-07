@@ -504,8 +504,6 @@ protocl.
     CPU does read-modify write one data item that was
     read-only. Transmits a "invalidate" messagee. Wait for invalidate
     acknowlege from all other CPUs.    
-
-
     \\
     \hline
     f & Modified & Shared &
@@ -551,8 +549,9 @@ protocl.
     k & Invalid & Shared &
     
     The CPU loads item not in cache and completes a transition on read
-    a "read response" 
-    \\
+    a "read response"     \\
+
+
     \hline
     l & Shared & Invalid &
     
@@ -560,13 +559,17 @@ protocl.
     "invalidate" message. Responds with a "invalidate acknowledge"
     messaage. \\
 
-
-    \hline
-
-
-    
+    \hline    
   \end{tabular*}
 \end{center}
+
+Store performance for a first write is poor.
+
+
+\subsubsection{Store Buffers}
+Added between CPU and cache
+\subsubsection{Store Forewarding}
+\subsubsection{Store Buffers and Memory Barriers}
 
 
 
