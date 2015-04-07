@@ -36,7 +36,7 @@
 
 \section{Introduction}
 
-Syncronization becomes necessary when the outcome of of a computation
+Syncronization becomes necessary when the outcome of a computation
 depends on how two or more interleaved kernel control paths are
 nested. Critical regions are parts of code that must be executed by at
 most one kernel coltrol path to completion before another kernel
@@ -59,11 +59,7 @@ It is greater than zero if
   positive value
 \end{itemize}
 
-
-
-
 \section{Kernel Syncrhonization Primitives}
-
 
 The linux kernel provides several synchronization primitives these
 include
@@ -91,8 +87,7 @@ include
 
 Many of these synchronization constructs depend on implementation of
 atomic operations implementd at the chip level on CPUs. Thus are
-specific to the architecture they are executing on. 
-
+specific to the architecture they are executing on.
 
 \subsection{Processor guarantees}
 
@@ -114,21 +109,26 @@ Things which cannot be assumed
   barriers.
 \item it \textbf{must not} be assumed that independent loads and
   stored will be issued in any given order.
-
 \item it \textbf{must not} be assumed that overlapping memroy accesses
   may be merged or discarded.  
 \end{itemize}
 
-Things that we anti-guarantees(bad stuff will happen):
+Things that we anti-guarantees (bad stuff will happen):
 
 \begin{itemize}
+
+
 \item Compilers will often genrate code to modify bit fields using non
   atomic read-modify write sequences
+
+
 \item All fieds in a given bitfield must be must be protected by one
   lock. Update of one field can be corrupted by another by compiler.
   
 \item Gaurantees only apply to properly aligned and sized scalar
   variables. Same size as "char","short","int" and "long".  
+
+
 \end{itemize}
 
 \subsection{Memory Barrier}
@@ -177,23 +177,36 @@ Memroy barrier types include
   Partial ordering on inter-dependent loads only. No effect on
   independent loads or overlapping loads.
 
-  hmm this is hair raisingly complex topic
 
-  
-  
+  TODO - need to look into this deeper.
 
-\item Read (or load) memory barrier
 
-  
+\item Read (or load) memory barrier  
+
   
   
 \item General Memory barrier
+
+  All LOAD and STORE operations before the barrier will happen before
+  all LOAD and STORE operations specified after the barrier with
+  respect to other components of the system.
+
+  A partial ordering over both loads and stores.  
+
 \item Implicet Barriers
   \begin{itemize}
   \item ACQUIRE operations
   \item RELEASE operations
   \end{itemize}
 \end{itemize}
+
+
+
+\subsection{CPU Memory Barriers}
+
+All memory barriers except datadependecy barriers imply compiler
+barrier. SMP memory barriers are reduced to compier barriers on
+uniprocessor compiled systems. 
 
 
 \begin{itemize}
@@ -206,6 +219,9 @@ Memroy barrier types include
   instruction.  The memory keyword forces the compiler to use memory
   locations instead of those stored in the register. The CPU can still
   mix assembly instruction
+
+
+  
   
 \item{Memory barrier}
 
@@ -385,9 +401,15 @@ be advisable to turn off preemptions for per CPU variables.
 
 \section{MESI Cache Coherency Protocol}
 
-The MESI protocol is a protocol used to implement cache and memory coherency amongst multiple CPUs. \cite{Birdetal2001}
+Cache-coherency protocls manage cache-line states to prevent
+inconsitent states or lost data. MESI stats for "modified",
+"exclusive", "shared" and "invalid". Which represent the four states
+assigned to cache lines in this protocol.The MESI protocol is a
+protocol used to implement cache and memory coherency amongst multiple
+CPUs. \cite{Birdetal2001}
 
-Two bits are added to each ache line which represent the four states that a cache line can be in. These are
+Two bits are added to each cache line which represent the four states
+that a cache line can be in.
 
 \begin{itemize}
 \item Modified
@@ -412,8 +434,130 @@ Two bits are added to each ache line which represent the four states that a cach
   \item Invalid 
 \end{itemize}
 
+\subsection{MESI Protocol messages}
+
+If the CPUs are on a single shared bus we only require the following
+messages on the bus.
+
+\begin{itemize}
+\item \textbf{Read} Content : physical address of cache line to be
+  read.
+\item \textbf{Read Response} Response with data, Source : Memory or
+  one of the other caches. If the other cache has data in modified
+  state.
+\item \textbf{Invalidate} Content : Address of cache line to be
+  invalidated. All other caches must invalidate cache line with this
+  address.
+
+\item \textbf{Invalidate Acknowledge} From: CPU that has invalidated a
+  cache line.
+
+\item \textbf{Read Invalidate} Content: Read cache line and take
+  ownership of it getting the cache line removed from other
+  processors. Combination of read and invalidate. Responses are read
+  response and invalidate acknowledge
+
+\item \textbf{Writeback} contnet: Address of and data of write back to
+  memory. This message might get snooped by other processors to mark
+  cache lines as "modified"  
+\end{itemize}
+
+Thus we see the fractal nature of distributed system where message
+passing is implemented at different levels of the systems
+architecture.
+
+
+\subsection{MESI Transitions Table}
+
+We give a tabular description of transitions involved in the MESI
+protocl.
+
+
+\begin{center}
+\begin{tabular*}{0.75\textwidth} {| l | l | l | l| }    
+    \hline
+    & Start  & End   & Descriptions \\
+    \hline
+    a & Modified  & Exclusive &
+    Cache line is written back to memmory but CPU retains exclusive 
+    owner ship of and right to modify it. Requires "writeback" 
+    message\\
+    \hline
+    b& Exclusive & Modified &  
+    CPU writes to exclusive cache line. No messages required. \\
+    \hline
+    c & Modified & Invalid &   
+    CPU receives a "read invalidate" for a cache line it modified.It 
+    must invalidate the local copy, send an read response and a 
+    invalidate acknowledge \\
+    \hline
+    d & Invalid & Modified &
+    An atomic read-modify-write operation on a data item not present
+    in the cache. Transmits a "read invalidate" response and gets
+    "read response". Cannot proceed until all cpus reply with
+    "invalidate acknowledge" response.    \\
+
+
+    \hline
+    e & Shared & Modified & 
+
+    CPU does read-modify write one data item that was
+    read-only. Transmits a "invalidate" messagee. Wait for invalidate
+    acknowlege from all other CPUs.    
+
+
+    \\
+    \hline
+    f & Modified & Shared &
+
+    Some other CPU reads from our cache line suplied from this
+    CPU. This CPU responds with a "read response" message.    
+    \\    
+    \hline
+
+    g & Exclusive & Shared & 
+
+    Some other CPU reads data in this cache line 
+    
+    \\
+    \hline
+
+    h & Shared & Exclusive & k \\
+    \hline
+
+    i & Exclusive & Invalid & k \\
+    \hline
+
+    j & Invalid & Exclusive & k \\
+    \hline
+
+    k & Invalid & Shared & k \\
+    \hline
+
+    l & Shared & Invalid & k \\
+    \hline
+    
+  \end{tabular*}
+\end{center}
+
+
+
+
 
 \begin{thebibliography}{9}
+
+\bibitem{ia32-sys}
+  \textit{IA-32 Intel Architecture Software Developer's Manual, Volume 3:
+    System Programming Guide} \\
+  \textit{Chapter 7.1: Locked Atomic Operations} \\
+  \textit{Chapter 7.2: Memory Ordering}  \\
+  \textit{Chapter 7.4: Serializing Instructions}
+
+\bibitem{unix-ma}
+  \textit{Unix Systems for Modern Architectures, Symmetric Multiprocessing and Caching
+    for Kernel Programmers} \\
+  \textit{Chapter 13: Other Memory Models}  
+  
 \bibitem{mesi-wikipedia} 
   \textit{MESI protocol} 
   \url{http://en.wikipedia.org/wiki/MESI_protocol}
@@ -443,3 +587,9 @@ Two bits are added to each ache line which represent the four states that a cach
 \end{thebibliography}
 
 \end{document}
+
+
+%% "I want to solve problems, but I want to solve my problems. I don't
+%% want to go looking for other people's problems to solve."
+%%
+%% - Linus
