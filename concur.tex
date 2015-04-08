@@ -24,6 +24,22 @@
 \date{\today}
 
 \begin{document}
+
+
+\lstdefinelanguage{anX86} {
+	morekeywords={
+		nop,movl,pushl,popl,cmpl,testl,leal,cmovl,jmp,je,jne,
+		jz,jnz,jg,jge,jl,jle,addl,subl,imul,idiv,cdq,incl,decl,
+		negl,andl,orl,xorl,notl,shrl,shll,sarl,sall,ret,leave,
+		call,setg,setl,setge,setle,setne,sete,movzbl,
+		eax,ebx,ecx,edx,edi,esi,ebp,esp,al,bl,cl,dl,
+                pause,lock,decb,jns,jle,jmp,cmpb,movb,xchg,xchgb
+	},
+	sensitive=true,
+	morecomment=[l]{\#},
+	morestring=[b]"
+}
+
 \lstset{language=C}  
 \maketitle
 
@@ -311,40 +327,68 @@ interruptions by other CPUs.
 
 \subsection{Spinlock}
 
+Spinlock is implemented by the \lstinline{spinlock_t} which consists
+of two fields:
+
+\begin{itemize}
+  \item \textbf{slock} Encodes the spinlock state. Value 1 corresponds
+    to unlocked state, Negative values and 0 denote locked state.
+  
+  \item \textbf{break\_lock} Flag signaling that a process is busy
+    waiting for the lock. Present on SMP systems with kernel
+    preemption.    
+\end{itemize}
+
+
+Some functions that initialize, acquire and relsease spin locks are
+given in the table.
+
   \begin{center}
-  \begin{tabular}{ l | l }    
+  \begin{tabular}{ |l | p{7cm}| }    
     \hline
     Function/Macors & Description \\ \hline
-    spin\_lock\_init() & Set spin lock to 1 (unlocked) \\ 
-    spin\_lock() & Cycle until spinlock becomes 1(unlocked) then set it to 0 (locked) \\ 
+    spin\_lock\_init() & Set spin lock to 1 (unlocked) \\
+    \hline
+    spin\_lock() &
+    Cycle until spinlock becomes 1(unlocked) then set it to 0 (locked) \\
+    \hline
     spin\_unlock() & Set the spin lock to 1 (unlocked) \\
+    \hline
     spin\_unlock\_wait() & Wait until the spinlock becomes 1 (unlocked)  \\
+    \hline
     spin\_is\_locked() & Return 0 if the spinlock is set to 1(unlocked) ; 1 otherwise  \\
+    \hline
     spin\_trylock() &  Set the spin lock to 0 (locked), and return 1 if the previous value of the lock was 1; 0 otherwise\\
     \hline
   \end{tabular}
   \end{center}
 
-  \subsubsection{The spin\_lock macro with kernel preemption}
+  \subsubsection{spin\_lock with kernel preemption}
 
   \begin{itemize}
-    \item Invoke \emph{preeempt\_disable()} dsiable kernel preemption
-    \item Invoke \emph{\_raw\_spin\_trylock()} atomic test and set on
-      spinlock's \emph{slock} field.
+  \item Invoke \lstinline{preeempt_disable()} disable kernel preemption
+    
+  \item Invoke \lstinline{_raw_spin_trylock()} atomic test and set on
+    spinlock's \lstinline{slock} field.
 
-      \emph{moveb \$0,\%a1}
-      \emph{xchgb \%a1,slp->slock}
+      \begin{lstlisting}[language=anX86]
+      movb $0,%a1
+      xchgb %a1,slp->slock
+      \end{lstlisting}
 
-      \emph{xchg} echange atomically content of 8-bit \%a1 with slp->slock.
-      return 1 if old value was positive or 0 otherwise.
 
-    \item If old value of spin lock was positve, we have acquired the spinlock
+      \lstinline{xchg} exchange atomically content of 8-bit
+      \lstinline{%a1} with \lstinline{slp->slock}.  return 1 if old
+      value was positive or 0 otherwise.
+
+    \item If old value of spin lock was positive, we have acquired the
+      spinlock.
         
     \item If failed then spin lock was not positive , invoke
-      \emph{preempt\_enable()} decrement the preeempt counter. which
-      if it goes to zero willl allow the process to be scheduled out,
+      \emph{preempt\_enable()} decrements the preeempt counter. which
+      if it goes to zero will allow the process to be scheduled out,
 
-    \item set the \emph{break\_lock} field to to one. Allow another
+    \item set the \emph{break\_lock} field to one. Allow another
       process to release spin lock prematurely
 
     \item Execute the wait cycle
@@ -352,14 +396,50 @@ interruptions by other CPUs.
       while(spin_is_locked(slp) && slp->break_lock)
           cpu_relax(); // special pause instruction Pentium 4
       \end{lstlisting}
-    \item Jump back to step 1 
-      
+    \item Jump back to step 1       
   \end{itemize}
 
 
-  
+  \subsubsection{spin\_lock (no kernel preemption)}
+
+  The following tight busy wait is implemented. An atomic decrement of
+  the spinlock is performed using the \lstinline{lock} prefix on the
+  decrement operation. A test is performed on sign flag if it is
+  positive we continue with instruction 3. Otherwise tight loop at 2
+  is executed until the spinlock is positive. When spinlock attains
+  positive value the execution will restart at label 1 where we will
+  try to atomically decrement the spin lock.
 
 
+\begin{lstlisting}[language=anX86]
+  1:  lock; decb slb->slock
+      jns 3f
+  2:  pause
+      cmpb $0,slp->slock
+      jle 2b
+      jmp 1b
+  3: 
+\end{lstlisting}
+
+\subsubsection{spin\_unlock}
+
+This releases an acquired spin lock. Executes the assembly instruction:
+
+
+\begin{lstlisting}[language=anX86]
+  movb $1,slp->slock
+\end{lstlisting}
+
+Then invoking \lstlisting{preempt_enable()}. on x86 the lock byte is
+not used since since write-only access in memory are atomically
+executed.
+
+\subsubsection{Read/Write Spin Locks}
+
+Allows serveral simultaneous reads of the same data structure as long
+as no kernel control path modifies it. Writer control paths acquire
+write locks granting exclusive access. Ability to perform concurrent
+reads improves system performance.
 
 \subsection{Semaphores}
 
@@ -368,7 +448,7 @@ interruptions by other CPUs.
 
 \subsection{Per-CPU Variables}
 
-A per-CPU variable is an array of datastructures one per cpu. Each CPU
+A per-CPU variable is an array of data structures one per cpu. Each CPU
 can read and modify its own elements without race.
 
 These are aligned in main memory so that each one falls in different
@@ -473,10 +553,10 @@ We give a tabular description of transitions involved in the MESI
 protocl.
 
 
-\begin{center}
-\begin{tabular*}{0.75\textwidth} {| l | l | l | l| }    
+
+\begin{tabular*}{0.75\textwidth} {| l | l | l | p{5cm}| }    
     \hline
-    & Start  & End   & Descriptions \\
+    \# & Start  & End   & Descriptions \\
     \hline
     a & Modified  & Exclusive &
     Cache line is written back to memmory but CPU retains exclusive 
@@ -497,7 +577,6 @@ protocl.
     "read response". Cannot proceed until all cpus reply with
     "invalidate acknowledge" response.    \\
 
-
     \hline
     e & Shared & Modified & 
 
@@ -515,13 +594,13 @@ protocl.
 
     g & Exclusive & Shared & 
 
+
     Some other CPU reads data in this cache line supplied from this
     CPU or from memory. If this CPU retains a read-only copy. This cpu
     will respond with a read response with requested data.
     
     \\
     \hline
-
     h & Shared & Exclusive & 
 
     This CPU is about to write to shared item. Transmits an invalidate
@@ -561,7 +640,7 @@ protocl.
 
     \hline    
   \end{tabular*}
-\end{center}
+
 
 Store performance for a first write is poor.
 
@@ -572,8 +651,13 @@ Added between CPU and cache
 \subsubsection{Store Buffers and Memory Barriers}
 
 
+\subsection{Summary & Acknowledgement}
 
-
+Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
+by Bovett and the mememory barrier documentation part of the linux
+kernel David Howells and Paul E. McKenney. Any errors are entirely my
+own. For people looking for definitive and trustworthy accounts
+looking at these original sources is highly recomended.
 
 \begin{thebibliography}{9}
 
