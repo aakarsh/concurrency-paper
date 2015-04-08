@@ -47,15 +47,14 @@
 \tableofcontents
 
 \maketitle
-%%\addcontentsline{toc}
 \vspace*{1cm}
 
 \section{Introduction}
 
-Syncronization becomes necessary when the outcome of a computation
+Synchronization becomes necessary when the outcome of a computation
 depends on how two or more interleaved kernel control paths are
 nested. Critical regions are parts of code that must be executed by at
-most one kernel coltrol path to completion before another kernel
+most one kernel control path to completion before another kernel
 control path is allowed to execute it.
 
 \section{Kernel Preemption}
@@ -71,11 +70,11 @@ It is greater than zero if
 \begin{itemize}
 \item The kernel is executing in an interrupt service routine.
 \item kernel is executing a tasklet of a softirq
-\item kernel preemption has been explictly disabled setting it to a
+\item kernel preemption has been explicitly disabled setting it to a
   positive value
 \end{itemize}
 
-\section{Kernel Syncrhonization Primitives}
+\section{Kernel Synchronization Primitives}
 
 The linux kernel provides several synchronization primitives these
 include
@@ -84,7 +83,7 @@ include
 \item \textbf{Per-CPU variables}
   Use duplicate data structures for each cpu
 \item \textbf{Atomic Operations}
-  Attomically read-modify-write instruction to a counter
+  Atomically read-modify-write instruction to a counter
 \item \textbf{Memory Barrier}
   Avoid instruction reordering
 \item  \textbf{Spinlock}
@@ -102,7 +101,7 @@ include
 \end{itemize}
 
 Many of these synchronization constructs depend on implementation of
-atomic operations implementd at the chip level on CPUs. Thus are
+atomic operations implemented at the chip level on CPUs. Thus are
 specific to the architecture they are executing on.
 
 \subsection{Processor guarantees}
@@ -112,7 +111,7 @@ specific to the architecture they are executing on.
     of issuance.
 
   \item Overlapping loads and stores within a particular CPU will
-    apear to be ordered within a CPU
+    appear to be ordered within a CPU
     
 \end{itemize}
 
@@ -121,7 +120,7 @@ Things which cannot be assumed
 \begin{itemize}
 \item it \textbf{must not} be assumed that compilers will not reorder
   memory references not protected with ACCESS\_ONCE(). Without
-  ACCESS\_ONCE() the compiler can perform tranformations see memory
+  ACCESS\_ONCE() the compiler can perform transformations see memory
   barriers.
 \item it \textbf{must not} be assumed that independent loads and
   stored will be issued in any given order.
@@ -134,14 +133,14 @@ Things that we anti-guarantees (bad stuff will happen):
 \begin{itemize}
 
 
-\item Compilers will often genrate code to modify bit fields using non
+\item Compilers will often generate code to modify bit fields using non
   atomic read-modify write sequences
 
 
-\item All fieds in a given bitfield must be must be protected by one
+\item All fields in a given bit-field must be must be protected by one
   lock. Update of one field can be corrupted by another by compiler.
   
-\item Gaurantees only apply to properly aligned and sized scalar
+\item Guarantees only apply to properly aligned and sized scalar
   variables. Same size as "char","short","int" and "long".  
 
 
@@ -149,25 +148,25 @@ Things that we anti-guarantees (bad stuff will happen):
 
 \subsection{Memory Barrier}
 
-Memroy barriers impose perceived partial ordering over memroy
+Memory barriers impose perceived partial ordering over memory
 operations on either side of the barrier.
 
 Memory barriers provide a way to instruct the compiler and CPU to
 restrict the order in which instructions are executed. Performance
 optimizations of compilers and CPUs play havoc with synchronization
-primitives. These include compiler reordering instructoins to optimize
+primitives. These include compiler reordering instructions to optimize
 register usage, CPUs executing instructions in parallel, reordering
 memory accesses.
 
 
 Types of performance tricks memory barriers may protect against are
 \begin{itemize}
-\item reordering and defferral of combination of memory operations
-\item sepculative loads
-\item sepculative branch prediction and caching
+\item reordering and deferral of combination of memory operations
+\item speculative loads
+\item speculative branch prediction and caching
 \end{itemize}
 
-Memroy barrier types include
+Memory barrier types include
 \begin{itemize}
 \item Write (or store) memory barrier
 
@@ -297,7 +296,7 @@ barriers maitain serial order of write instructions.
   \end{tabular}
 \end{center}
 
-All atomic operaitions act as memory barriers since they use the lock byte.
+All atomic operations act as memory barriers since they use the lock byte.
 
 \subsection{Atomic Operations}
 
@@ -421,7 +420,7 @@ given in the table.
   3: 
 \end{lstlisting}
 
-\subsubsection{spin\_unlock}
+%\subsubsection{spin\_unlock}
 
 This releases an acquired spin lock. Executes the assembly instruction:
 
@@ -442,7 +441,6 @@ write locks granting exclusive access. Ability to perform concurrent
 reads improves system performance.
 
 \subsection{Semaphores}
-
 
 
 
@@ -651,13 +649,13 @@ Added between CPU and cache
 \subsubsection{Store Buffers and Memory Barriers}
 
 
-\subsection{Summary & Acknowledgement}
+%% \subsection{Summary & Acknowledgement}
 
-Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
-by Bovett and the mememory barrier documentation part of the linux
-kernel David Howells and Paul E. McKenney. Any errors are entirely my
-own. For people looking for definitive and trustworthy accounts
-looking at these original sources is highly recomended.
+%% Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
+%% by Bovett and the mememory barrier documentation part of the linux
+%% kernel David Howells and Paul E. McKenney. Any errors are entirely my
+%% own. For people looking for definitive and trustworthy accounts
+%% looking at these sources is recomended.
 
 \begin{thebibliography}{9}
 
@@ -677,9 +675,8 @@ looking at these original sources is highly recomended.
   \textit{MESI protocol}  \\
   \url{http://en.wikipedia.org/wiki/MESI_protocol}
 \bibitem{cache-coherency-primer} 
-   \textit{Cache Coherency Primer}  \textit{Fabian “ryg” Giesen} \\
-   \url{https://fgiesen.wordpress.com/2014/07/07/cache-coherency/}
-
+  \textit{Cache Coherency Primer}  \textit{Fabian "ryg" Giesen} \\
+  \url{https://fgiesen.wordpress.com/2014/07/07/cache-coherency/}
  \bibitem{atomic-operations}
    \textit{Atomic Operations - CSE 378 University of Washington} \\
   \url{http://courses.cs.washington.edu/courses/cse378/07au/lectures/L25-Atomic-Operations.pdf}
@@ -703,14 +700,6 @@ looking at these original sources is highly recomended.
   \textit{Why memory barriers?}
   \textit{Paul McKay}
   \url{http://www.rdrop.com/users/paulmck/scalability/paper/whymb.2010.06.07c.pdf}
-
-
 \end{thebibliography}
 
 \end{document}
-
-
-%% "I want to solve problems, but I want to solve my problems. I don't
-%% want to go looking for other people's problems to solve."
-%%
-%% - Linus
