@@ -57,23 +57,6 @@ nested. Critical regions are parts of code that must be executed by at
 most one kernel control path to completion before another kernel
 control path is allowed to execute it.
 
-\section{Kernel Preemption}
-
-Process running in Kernel Mode can be replaced by another
-process. Process switches happens via the \lstinline{switch_to_macro}.
-
-Kernel premption is enabled and disabled via the
-\lstinline{prempt_count} in the \lstinline{thread_info}.
-
-It is greater than zero if 
-
-\begin{itemize}
-\item The kernel is executing in an interrupt service routine.
-\item kernel is executing a tasklet of a softirq
-\item kernel preemption has been explicitly disabled setting it to a
-  positive value
-\end{itemize}
-
 \section{Kernel Synchronization Primitives}
 
 The linux kernel provides several synchronization primitives these
@@ -144,6 +127,24 @@ Things that we anti-guarantees (bad stuff will happen):
   variables. Same size as "char","short","int" and "long".  
 
 
+\end{itemize}
+
+
+\section{Kernel Preemption}
+
+Process running in Kernel Mode can be replaced by another
+process. Process switches happens via the \lstinline{switch_to_macro}.
+
+Kernel premption is enabled and disabled via the
+\lstinline{prempt_count} in the \lstinline{thread_info}.
+
+It is greater than zero if 
+
+\begin{itemize}
+\item The kernel is executing in an interrupt service routine.
+\item kernel is executing a tasklet of a softirq
+\item kernel preemption has been explicitly disabled setting it to a
+  positive value
 \end{itemize}
 
 \subsection{Memory Barrier}
@@ -439,6 +440,24 @@ Allows serveral simultaneous reads of the same data structure as long
 as no kernel control path modifies it. Writer control paths acquire
 write locks granting exclusive access. Ability to perform concurrent
 reads improves system performance.
+
+Read/Write spinlocks are represented by \lstinline{rwlock_t} structure
+with a 32-bit lock field
+
+The bit field \lstinline{lock} is devided into a counter and a flag
+\begin{itemize}
+\item \textbf{counter} 24 bit field , Number of kernel control paths
+  in reading in the critical section.
+  \item \textbf{flag} An unlocked flag at bit 24. Set when there are no
+    control paths in critical section. othersize cleared.
+\end{itemize}
+
+Thus lock is \emph{0x01000000} when spin lock idle and
+\emph{0x00000000} when writing. and any number after \emph{0x00ffffff}
+when one thread is reading , \emph{0x00fffffe} when on thread is
+reading, i.e stored in twos complement format.
+
+Like ordinary spinlock we also include a \lstinline{break_lock} field. 
 
 \subsection{Semaphores}
 
