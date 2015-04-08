@@ -282,8 +282,8 @@ barriers maitain serial order of write instructions.
 \end{center}
   Macro expansions on  80x86
 
-  \begin{center}
-  \begin{tabular}{ l | l }    
+
+  \begin{tabular}{ l | p{5 cm} }    
     \hline
     Function/Macors & Description \\ \hline
     mb() &  \\ 
@@ -294,7 +294,7 @@ barriers maitain serial order of write instructions.
     smp\_wmb() &  \\
     \hline
   \end{tabular}
-\end{center}
+
 
 All atomic operations act as memory barriers since they use the lock byte.
 
@@ -420,7 +420,7 @@ given in the table.
   3: 
 \end{lstlisting}
 
-%\subsubsection{spin\_unlock}
+\subsubsection{spin\_unlock}
 
 This releases an acquired spin lock. Executes the assembly instruction:
 
@@ -429,7 +429,7 @@ This releases an acquired spin lock. Executes the assembly instruction:
   movb $1,slp->slock
 \end{lstlisting}
 
-Then invoking \lstlisting{preempt_enable()}. on x86 the lock byte is
+Then invoking \lstinline{preempt_enable()}. on x86 the lock byte is
 not used since since write-only access in memory are atomically
 executed.
 
@@ -649,13 +649,13 @@ Added between CPU and cache
 \subsubsection{Store Buffers and Memory Barriers}
 
 
-%% \subsection{Summary & Acknowledgement}
+\subsection{Summary \& Acknowledgement}
 
-%% Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
-%% by Bovett and the mememory barrier documentation part of the linux
-%% kernel David Howells and Paul E. McKenney. Any errors are entirely my
-%% own. For people looking for definitive and trustworthy accounts
-%% looking at these sources is recomended.
+Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
+by Bovett and the mememory barrier documentation part of the linux
+kernel David Howells and Paul E. McKenney. Any errors are entirely my
+own. For people looking for definitive and trustworthy accounts
+looking at these sources is recomended.
 
 \begin{thebibliography}{9}
 
