@@ -84,7 +84,6 @@ The \lstinline{prempt_count} is an amalgamation of three separate
 counters meant to keep track number of times kernel preemption count
 as well as softirq and hardirq counts.
 
-
 \begin{center}
   \begin{tabular}{ l | l }    
     \hline
@@ -96,11 +95,11 @@ as well as softirq and hardirq counts.
   \end{tabular}
 \end{center}
 
-Thus kerenel is preempted only when its executing an exception handler
-and kerenel preemption has not been explicitly disabled and the local
+Thus kernel is preempted only when its executing an exception handler
+and kernel preemption has not been explicitly disabled and the local
 CPU has local interrupts enabled.
 
-Key Macors Desling with preemption counter are given as 
+Key Macors Dealing with preemption counter are given as 
 
 \begin{center}
   \begin{tabular}{ l | p{9 cm} }    
@@ -168,7 +167,7 @@ Things which cannot be assumed
   barriers.
 \item it \textbf{must not} be assumed that independent loads and
   stored will be issued in any given order.
-\item it \textbf{must not} be assumed that overlapping memroy accesses
+\item it \textbf{must not} be assumed that overlapping memory accesses
   may be merged or discarded.  
 \end{itemize}
 
@@ -176,10 +175,8 @@ Things that we anti-guarantees (bad stuff will happen):
 
 \begin{itemize}
 
-
 \item Compilers will often generate code to modify bit fields using non
   atomic read-modify write sequences
-
 
 \item All fields in a given bit-field must be must be protected by one
   lock. Update of one field can be corrupted by another by compiler.
@@ -211,12 +208,13 @@ Types of performance tricks memory barriers may protect against are
 \end{itemize}
 
 Memory barrier types include
+
 \begin{itemize}
 \item Write (or store) memory barrier
 
-  A write memory barrier gives gauratnee that all STORE operations
+  A write memory barrier gives guarantee that all STORE operations
   specified before the barrier will happen before all STORE operations
-  STORE oeprations specified after the barrier. wrt other components
+  STORE operations specified after the barrier. wrt. other components
   in the system.
 
   A partial order on STORES only. Does not affect LOADS.
@@ -228,19 +226,37 @@ Memory barrier types include
   
 \item Data dependency barrier
 
-  Weaker form of read barrier. Two loads such that the the second
-  depnds on result of first ( first load retreives the address which
-  to which second load is directed). Ensure the target of second load
-  is updated before first load accessed (??)
+  Weaker form of read barrier. Two loads such that the second depends
+  on result of first ( first load retrieves the address which to which
+  second load is directed). Ensure the target of second load is
+  updated before first load accessed (??)
 
   Partial ordering on inter-dependent loads only. No effect on
-  independent loads or overlapping loads.
+  independent loads or overlapping loads. Has no affect on stores.
+
+  A data dependency barrier issued by the CPU is thus a line in the
+  sand such that for any loads preceding it, if that load touchs one
+  of a sequence of stores from another CPU then by the time the
+  barrier completes(the line is crossed) the effect of all stores
+  prior to that load will be perceptible by any loads issued after the
+  data dependency barrier.
+
+  Thus a dependency barrier is an optimization to prevent the
+  requirement for a full read (or load) barrier.
 
 
-  TODO - need to look into this deeper.
+\item Read (or load) memory barrier
 
+  A read load barrier is a data dependency barrier plus a gaurantee
+  that all LOAD operations specified before the barrier will appear to
+  happen before all the LOAD operations specified after the barrier
+  wrt other compenents in the system.
 
-\item Read (or load) memory barrier  
+  A parital ordering on loads only; no required effect on stores.
+
+  Imply data dependency barrier.
+
+  Should be paired with write barriers ??
 
   
   
@@ -252,12 +268,77 @@ Memory barrier types include
 
   A partial ordering over both loads and stores.  
 
-\item Implicet Barriers
+\item Implicit Barriers
   \begin{itemize}
   \item ACQUIRE operations
   \item RELEASE operations
   \end{itemize}
 \end{itemize}
+
+
+\subsection{Data Dependency Barrier}
+
+To better understand need for data dependency barriers consider 
+the following sequence of instructions:
+
+\begin{lstlisting}
+	CPU 1		      CPU 2
+	===============	      ===============
+	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
+	B = 4;
+	<write barrier>
+	ACCESS_ONCE(P) = &B
+			      Q = ACCESS_ONCE(P);
+			      D = *Q;
+\end{lstlisting}
+
+While the write barrier will guarantee that all writes seen by both
+processors.  After the barrier Q will be assigned either the address
+of B or the address of A depending on whether the update to P was seen
+by CPU2 or not.
+
+D is assigned a dereference to Q. We thus expect the dereference to
+dereferece A or B getting values of A=1 or B=4.
+
+BUT, CPU 2's percep of P may be updated before its perception of B
+leading to the following situation.
+
+(Q = &B) and (D = 2 ) ???
+
+\begin{lstlisting}
+        CPU 1		      CPU 2
+	===============	      ===============
+	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
+	B = 4;
+	<write barrier>
+	ACCESS_ONCE(P) = &B
+			      Q = ACCESS_ONCE(P);
+			      <data dependency barrier>
+			      D = *Q;  
+\end{lstlisting}
+
+The data dependency barrier forces the assingment of B to show up on
+processor 2 when Q is assigned a pointer to B.
+
+\subsubsection{Multiple Reads}
+
+
+
+
+
+
+
+\subsection{Control Dependencies}
+
+
+\subsection{SMP Barrier Pairing}
+
+\subsection{Read Memory Barriers vs Load Speculation}
+
+\subsection{Transitiviy}
+
+
+\subsection{Kernel Barriers}
 
 
 
@@ -339,7 +420,6 @@ barriers maitain serial order of write instructions.
     \hline
   \end{tabular}
 
-
 All atomic operations act as memory barriers since they use the lock byte.
 
 \subsection{Atomic Operations}
@@ -367,7 +447,6 @@ interruptions by other CPUs.
 \end{itemize}
 
 
-
 \subsection{Spinlock}
 
 Spinlock is implemented by the \lstinline{spinlock_t} which consists
@@ -381,7 +460,6 @@ of two fields:
     waiting for the lock. Present on SMP systems with kernel
     preemption.    
 \end{itemize}
-
 
 Some functions that initialize, acquire and relsease spin locks are
 given in the table.
