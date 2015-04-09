@@ -303,7 +303,12 @@ dereferece A or B getting values of A=1 or B=4.
 BUT, CPU 2's percep of P may be updated before its perception of B
 leading to the following situation.
 
+\begin{lstlisting}
 (Q = &B) and (D = 2 ) ???
+\end{lstlisting}
+
+
+
 
 \begin{lstlisting}
         CPU 1		      CPU 2
@@ -317,36 +322,44 @@ leading to the following situation.
 			      D = *Q;  
 \end{lstlisting}
 
-The data dependency barrier forces the assingment of B to show up on
+The data dependency barrier forces the assignment of B to show up on
 processor 2 when Q is assigned a pointer to B.
 
 \subsubsection{Multiple Reads}
 
 
-
-
-
-
-
 \subsection{Control Dependencies}
+
+Control dependencies are those which require a full read memory
+barrier where a data dependency barrier will simply not suffice.
+
+\begin{lstlisting}
+  	q = ACCESS_ONCE(a);
+	if (q) {
+		<data dependency barrier>  /* BUG: No data dependency!!! */
+		p = ACCESS_ONCE(b);
+	}
+
+\end{lstlisting}
+
+
 
 
 \subsection{SMP Barrier Pairing}
 
 \subsection{Read Memory Barriers vs Load Speculation}
 
-\subsection{Transitiviy}
+\subsection{Transitivity}
 
 
 \subsection{Kernel Barriers}
 
 
-
 \subsection{CPU Memory Barriers}
 
-All memory barriers except datadependecy barriers imply compiler
-barrier. SMP memory barriers are reduced to compier barriers on
-uniprocessor compiled systems. 
+All memory barriers except data dependency barriers imply compiler
+barrier. SMP memory barriers are reduced to compiler barriers on
+uni-processor compiled systems. 
 
 
 \begin{itemize}
