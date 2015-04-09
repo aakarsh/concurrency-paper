@@ -57,6 +57,67 @@ nested. Critical regions are parts of code that must be executed by at
 most one kernel control path to completion before another kernel
 control path is allowed to execute it.
 
+
+\section{Kernel Preemption}
+
+Process running in Kernel Mode can be replaced by another process.
+The main reason for making a kernel preemptive is to reduce the
+dispatch latency of user mode processes (the time between when they
+become runnable and begin running).  Process switches happens via
+the\lstinline{switch_to_macro}.
+
+Kernel premption is enabled and disabled via the
+\lstinline{prempt_count} in the \lstinline{thread_info}. A tast is
+premptible if \lstinline{thread_info()->preempt_count} is zero.
+
+The \lstinline{prempt_count} is greater than zero if 
+
+\begin{itemize}
+\item The kernel is executing in an interrupt service routine.
+\item kernel is executing a tasklet of a softirq
+\item kernel preemption has been explicitly disabled setting it to a
+  positive value
+\end{itemize}
+
+
+The \lstinline{prempt_count} is an amalgamation of three separate
+counters meant to keep track number of times kernel preemption count
+as well as softirq and hardirq counts.
+
+
+\begin{center}
+  \begin{tabular}{ l | l }    
+    \hline
+    Bits & Description                    \\ \hline
+    0-7 & Preemption counter (max=255)    \\ 
+    8-15 & Softirq counter (max=255)      \\ 
+    16-27 &  Hardirq counter (max=4096)   \\ 
+    28 & \lstinline{PREEMPT_ACTIVE} flag  \\ \hline
+  \end{tabular}
+\end{center}
+
+Thus kerenel is preempted only when its executing an exception handler
+and kerenel preemption has not been explicitly disabled and the local
+CPU has local interrupts enabled.
+
+Key Macors Desling with preemption counter are given as 
+
+\begin{center}
+  \begin{tabular}{ l | p{9 cm} }    
+    \hline
+    Bits & Description                    \\ \hline
+    \lstinline{preempt_count()} & Select the \lstinline{preempt count} from \lstinline{thread_info}    \\ 
+    \lstinline{preempt_disable()} & Increase the value of the preemption counter.     \\ 
+    \lstinline{preempt_enable_no_resched()} &  Decrease by one the value of the preemption counter  \\
+    \lstinline{preempt_enable()} & Decrease by one the value of preemption counter and call \lstinline{preempt_schedule()} if \lstinline{TIF_NEED_RESCHED} on \lstinline{thread_info} is set \\
+    \lstinline{get_cpu()} & Similar to \lstinline{preempt_disable()} but also returns the number of local CPU \\
+    \lstinline{put_cpu()} & Same as  \lstinline{preempt_enable()} \\
+    \lstinline{put_cpu_no_resched()} & Same as \lstinline{preempt_enable_no_resched()}    \\
+    \hline
+  \end{tabular}
+\end{center}
+
+
 \section{Kernel Synchronization Primitives}
 
 The linux kernel provides several synchronization primitives these
@@ -125,27 +186,9 @@ Things that we anti-guarantees (bad stuff will happen):
   
 \item Guarantees only apply to properly aligned and sized scalar
   variables. Same size as "char","short","int" and "long".  
-
-
 \end{itemize}
 
 
-\section{Kernel Preemption}
-
-Process running in Kernel Mode can be replaced by another
-process. Process switches happens via the \lstinline{switch_to_macro}.
-
-Kernel premption is enabled and disabled via the
-\lstinline{prempt_count} in the \lstinline{thread_info}.
-
-It is greater than zero if 
-
-\begin{itemize}
-\item The kernel is executing in an interrupt service routine.
-\item kernel is executing a tasklet of a softirq
-\item kernel preemption has been explicitly disabled setting it to a
-  positive value
-\end{itemize}
 
 \subsection{Memory Barrier}
 
@@ -457,7 +500,26 @@ Thus lock is \emph{0x01000000} when spin lock idle and
 when one thread is reading , \emph{0x00fffffe} when on thread is
 reading, i.e stored in twos complement format.
 
-Like ordinary spinlock we also include a \lstinline{break_lock} field. 
+Like ordinary spinlock we also include a \lstinline{break_lock} field.
+
+\subsection{Reading with read/write spinlock}
+
+When acquiring the read lock the \lstinline{read_lock} macro will use
+the \lstinline{_raw_read_trylock()} function.
+
+\begin{lstlisting}
+  int _raw_read_trylock(rwlock_t *lock)
+  {
+    atomic_t *count = (atomic_t *)lock->lock;
+    atomic_dec(count);
+    if (atomic_read(count) >= 0)
+       return 1;
+    atomic_inc(count);
+    return 0
+   }
+\end{lstlisting}
+
+
 
 \subsection{Semaphores}
 
@@ -716,8 +778,8 @@ looking at these sources is recomended.
   \textit{David E. Patterson and J.L. Hennessey} 
   
 \bibitem{whymem}
-  \textit{Why memory barriers?}
-  \textit{Paul McKay}
+  \textit{Why memory barriers?} \\
+  \textit{Paul McKay} \\
   \url{http://www.rdrop.com/users/paulmck/scalability/paper/whymb.2010.06.07c.pdf}
 \end{thebibliography}
 
