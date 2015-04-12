@@ -339,41 +339,284 @@ barrier where a data dependency barrier will simply not suffice.
 		<data dependency barrier>  /* BUG: No data dependency!!! */
 		p = ACCESS_ONCE(b);
 	}
+\end{lstlisting}
 
+Here CPU may attempt to short circuit in an attempt to predict the
+branch outcome. Thus the load from b may appear to happen before the
+load from a.
+
+The solution for this is to impose a read barrier to ensure that b is
+read
+
+
+While LOAD is speculated the STORES are NOT speculated. Thus the
+ordering symantics of following will not be affected.
+
+\begin{lstlisting}
+	q = ACCESS_ONCE(a);
+	if (q) {
+		ACCESS_ONCE(b) = p;
+	}  
 \end{lstlisting}
 
 
+The \lstinline{ACCESS_ONCE} directive is aimed at the compiler to
+prevent it from merging separate loads from 'a' and seperate stores to
+'b'.
+
+TODO leaving this for now its hair raisingly complex shit the
+programmer is caught between hot shot compiler writers and hot shot
+cpu designers
 
 
 \subsection{SMP Barrier Pairing}
+
+
+
 
 \subsection{Read Memory Barriers vs Load Speculation}
 
 \subsection{Transitivity}
 
 
-\subsection{Kernel Barriers}
+\subsection{Explicit Kernel Barriers}
 
+\subsubsection{Compiler Barriers}
 
-\subsection{CPU Memory Barriers}
+Used primarily to prevent the compiler from reordering instructions
+the \lstinline{barrier()} is a genetar barrier. The
+\lstinline{ACCESS_ONCE()} macro is a weaker form of the barrier
+instruction which only affects instructions flagged by
+\lstinline{ACCESS_ONCE()}.
 
-All memory barriers except data dependency barriers imply compiler
-barrier. SMP memory barriers are reduced to compiler barriers on
-uni-processor compiled systems. 
+Can be implemented using the
+
+\emph{barrier()} macro expanding to \emph{asm volatile"":::memory}
+
+Tells the compiler to insert empty assembly fragment. While the
+volatile keyword forbids the compiler from shuffling the instruction.
+The memory keyword forces the compiler to use memory locations instead
+of those stored in the register. The CPU can still mix assembly
+instruction
+
+Effects of \lstinline{barrier()}:
+
+\begin{itemize}
+  \item Prevent compiler from reordering accesses following barrier()
+    with those preceding them them.
+
+  \item Within loop, foce compiler to lad variables used in loop
+    conditional on each pass through loop.    
+\end{itemize}
+
+Effects of \lstinline{ACCESS_ONCE()} , prevent optimizations that
+though safe in single threaded code will break concurrent code.
 
 
 \begin{itemize}
+\item Provide cache coherence for accesses from multiple CPUs to
+  single variable. Prevent compiler for reording loads and stores to
+  same variable.
+  
+  Thus
+  \begin{lstlisting}
+    a[0] = ACCESS_ONCE(x);
+    a[1] = ACCESS_ONCE(x);
+  \end{lstlisting}
+  Will prevent \lstinline{a[1]} from receiving older value of x than
+  \lstinline{a[0]}.
 
-\item{Optimization barrier} Can be implemented using the
-  \emph{barrier()} macro expanding to \emph{asm volatile"":::memory}
+\item Prevent merging successive loads
 
-  Tells the compiler to insert empty assembly fragment. While the
-  volatile keyword forbids the compiler from shuffling the
-  instruction.  The memory keyword forces the compiler to use memory
-  locations instead of those stored in the register. The CPU can still
-  mix assembly instruction
+  \begin{lstlisting}
+    while (tmp = ACCESS_ONCE(a))
+		do_something_with(tmp);
+  \end{lstlisting}
+
+  Will prevent the compiler from optimizing the loop otherwise as
+
+  \begin{lstlisting}    
+	if (tmp = a)
+		for (;;)
+			do_something_with(tmp);
+  \end{lstlisting}
+
+\item 
+  
+\item
+\end{itemize}
 
 
+It is not necessary to use \lstinline{ACCESS_ONCE()} on variables
+marked volatile since it is implemented as a volatile cast.
+
+It must be noted that compiler barriers \textbf{\emph{DO NOT}}
+directly affect the CPU, which may still reorder instructions.
+
+
+\subsubsection{CPU Memory Barriers}
+
+All memory barriers except data dependency barriers imply compiler
+barrier. SMP memory barriers are reduced to compiler barriers on
+uni-processor compiled systems. All memory barriers except data
+dependency barriers imply a compiler barrier.
+
+\begin{center}
+  \begin{tabular}{ l| l | l }    
+    \hline
+    Type & Mandatory & SMP Conditional \\ \hline
+    GENERAL & mb() & \lstinline{smb_mb()} \\ 
+    WRITE & wmb() & \lstinline{smp_wmb()}  \\ 
+    READ &  rmb() & \lstinline{smp_rmb()}  \\
+    DATA DEPENDENCY &  \lstinline{read_barrier_depends()} & \lstinline{smp_read_barrier_depends()} \\
+    \hline
+  \end{tabular}
+\end{center}
+
+The usage of mandatory barrier may be used to control MMIO effects
+since they affect the order in which memory operations appear to
+device and prevent the compiler and CPU from reordering them.
+
+
+\subsection{Implicit Kerenl Memory Barriers}
+
+Many locking and scheduling functions imply memory barriers. We
+consider the some of these implicit barriers.
+
+\subsubsection{Acquiring Functions}
+
+Following are exmples of acquiring functions inside the kernel.
+
+\begin{itemize}
+  \item Spin Locks
+  \item Read/Write Spin locks
+  \item Mutexes
+  \item Semaphores
+  \item Read/Write Semaphores
+  \item RCU
+\end{itemize}
+
+\begin{itemize}
+  
+\item \textbf{ACQUIRE Implication} \\
+
+  Post-ACQUIRE operations \emph{will be completed} after after ACQUIRE
+  completion.
+
+  Pre-ACQUIRE operations \emph{may be completed} after ACQUIRE
+  completion.
+  
+\item \textbf{RELEASE Implications} \\
+
+  Pre-RELEASE operations \emph{will be completed} before RELEASE
+  completion.
+
+  Post-RELEASE operations \emph{may be completed} before RELEASE
+  completion.
+
+\item \textbf{ACQUIRE vs ACQUIRE Implication} \\
+
+  All ACQUIRE operations will be completed before successive ACQUIRE
+  operation .
+
+\item \textbf{ACQUIRE vs RELEASE Implication} \\
+
+  All ACQUIRE operations issued before RELEASE operation will be
+  completed before RElEASe operation.
+
+\item \textbf{Failed conditional ACQUIRE Implication} \\
+
+  Failed lock operations dont imply any barrier.
+  
+\end{itemize}
+
+Due to the possiblity that pre-ACQUIRE operations may happen after
+ACQUIRE and post-RELEASE may happen before RELEASE thus accesses may
+cross.
+
+\begin{lstlisting}
+  *A = a;
+  ACQUIRE M
+  RELEASE M
+  *B = b;
+\end{lstlisting}
+
+May get run as
+
+\begin{lstlisting}
+  ACQUIRE M, STORE *B, STORE *A, RELEASE M
+\end{lstlisting}
+
+Also RELEASE followed by ACQUIRE does not imply a full memory barrier.
+
+\begin{lstlisting}  
+	*A = a;
+	RELEASE M
+	ACQUIRE N
+	*B = b;
+\end{lstlisting}
+
+May run as :
+
+
+\begin{lstlisting}
+  ACQUIRE N, STORE *B, STORE *A, RELEASE M
+\end{lstlisting}
+
+
+
+\subsubsection{Interrupt Disabling Functions}
+
+Functions disabling/enablign interrupts will only act as compiler
+barriers. 
+
+\subsubsection{Sleep and Wake up Functions}
+
+
+
+\subsubsection{Miscellaneous Functions}
+
+
+
+\subsection{Atomic Operations}
+
+Many atomic operations imply full memory barriers and are heavily
+relied upon in the kernel.
+
+Any atomic operation that modifies state in memory and returns
+information about the state simplies SMP-conditional memory barrier.
+on each side of the operation. That is \lstinline{smp_mb()}.
+
+Atomic operations which use which imply SMP general memory barrier
+include:
+
+\begin{center}
+  \begin{tabular}{ l | l }    
+    \hline
+    Atomic Operations &  \\ \hline
+    \lstinline{xchg()}; & \\
+    \lstinline{cmpxchg()}; & \\
+    \lstinline{atomic_xchg()}; &			\lstinline{atomic_long_xchg()} \\
+    \lstinline{atomic_cmpxchg()}; &		        \lstinline{atomic_long_cmpxchg()} \\
+    \lstinline{atomic_inc_return()}; &		        \lstinline{atomic_long_inc_return()} \\
+    \lstinline{atomic_dec_return()}; &		        \lstinline{atomic_long_dec_return()} \\
+    \lstinline{atomic_add_return()}; &		        \lstinline{atomic_long_add_return()} \\
+    \lstinline{atomic_sub_return()}; &		        \lstinline{atomic_long_sub_return()} \\
+    \lstinline{atomic_inc_and_test()}; &		\lstinline{atomic_long_inc_and_test()} \\
+    \lstinline{atomic_dec_and_test()}; &		\lstinline{atomic_long_dec_and_test()} \\
+    \lstinline{atomic_sub_and_test()}; &		\lstinline{atomic_long_sub_and_test()} \\
+    \lstinline{atomic_add_negative()}; &		\lstinline{atomic_long_add_negative()} \\
+    \lstinline{test_and_set_bit()}; & \\
+    \lstinline{test_and_clear_bit()}; & \\
+    \lstinline{test_and_change_bit()}; &     \\
+    \hline
+  \end{tabular}
+\end{center}
+
+
+
+
+\begin{itemize}
   
   
 \item{Memory barrier}
@@ -434,6 +677,7 @@ barriers maitain serial order of write instructions.
   \end{tabular}
 
 All atomic operations act as memory barriers since they use the lock byte.
+
 
 \subsection{Atomic Operations}
 
@@ -855,6 +1099,11 @@ looking at these sources is recomended.
 \bibitem{memory-barriers}
   \textit{Linux Kernel Memory Barriers} \\
   \url{https://www.kernel.org/doc/Documentation/memory-barriers.txt}
+
+\bibitem{atomic-operations}
+  \textit{Semantics and Behavior of Atomic and Bitmask Operations} \\
+  \textit{David S. Miller} \\
+  \url{https://www.kernel.org/doc/Documentation/atomic_ops.txt}
 
 \bibitem{columbia-sync-linux}
   \textit{Synchronization in Linux} \\
