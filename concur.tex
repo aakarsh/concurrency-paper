@@ -443,7 +443,6 @@ though safe in single threaded code will break concurrent code.
 \item
 \end{itemize}
 
-
 It is not necessary to use \lstinline{ACCESS_ONCE()} on variables
 marked volatile since it is implemented as a volatile cast.
 
@@ -519,10 +518,17 @@ barriers maitain serial order of write instructions.
   \begin{tabular}{ l | p{5 cm} }    
     \hline
     Function/Macors & Description \\ \hline
-    mb() &  \\ 
-    rmb() & asm volatile ("lfence") or asm volatile ("lock;addl 0,0(\%\%esp)":::"memory")  \\ 
-    wmb() & barrier()- intel never reorders write memory access only need an optimization barrier  \\
-    smp\_mb() &   \\
+    mb() & \lstinline{asm volatile("mfence":::"memory")}  \\  \hline
+    rmb() &
+\begin{lstlisting}
+  asm volatile ("lfence")
+  or
+  asm volatile ("lock;addl 0,0(%esp)":::"memory")
+\end{lstlisting}
+      \\ \hline
+      wmb() & barrier() 
+      Intel never reorders write memory access so we get only a compiler barrier here.  \\ \hline
+    smp\_mb()  &   \\
     smp\_rmb() &  \\
     smp\_wmb() &  \\
     \hline
