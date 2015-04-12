@@ -67,7 +67,7 @@ become runnable and begin running).  Process switches happens via
 the\lstinline{switch_to_macro}.
 
 Kernel premption is enabled and disabled via the
-\lstinline{prempt_count} in the \lstinline{thread_info}. A tast is
+\lstinline{prempt_count} in the \lstinline{thread_info}. A task is
 premptible if \lstinline{thread_info()->preempt_count} is zero.
 
 The \lstinline{prempt_count} is greater than zero if 
@@ -247,12 +247,12 @@ Memory barrier types include
 
 \item Read (or load) memory barrier
 
-  A read load barrier is a data dependency barrier plus a gaurantee
+  A read load barrier is a data dependency barrier plus a guarantee
   that all LOAD operations specified before the barrier will appear to
   happen before all the LOAD operations specified after the barrier
-  wrt other compenents in the system.
+  wrt other components in the system.
 
-  A parital ordering on loads only; no required effect on stores.
+  A partial ordering on loads only; no required effect on stores.
 
   Imply data dependency barrier.
 
@@ -298,9 +298,9 @@ of B or the address of A depending on whether the update to P was seen
 by CPU2 or not.
 
 D is assigned a dereference to Q. We thus expect the dereference to
-dereferece A or B getting values of A=1 or B=4.
+dereference A or B getting values of A=1 or B=4.
 
-BUT, CPU 2's percep of P may be updated before its perception of B
+BUT, CPU 2's perception of P may be updated before its perception of B
 leading to the following situation.
 
 \begin{lstlisting}
@@ -350,7 +350,7 @@ read
 
 
 While LOAD is speculated the STORES are NOT speculated. Thus the
-ordering symantics of following will not be affected.
+ordering semantics of following will not be affected.
 
 \begin{lstlisting}
 	q = ACCESS_ONCE(a);
@@ -361,13 +361,10 @@ ordering symantics of following will not be affected.
 
 
 The \lstinline{ACCESS_ONCE} directive is aimed at the compiler to
-prevent it from merging separate loads from 'a' and seperate stores to
+prevent it from merging separate loads from 'a' and separate stores to
 'b'.
 
-TODO leaving this for now its hair raisingly complex shit the
-programmer is caught between hot shot compiler writers and hot shot
-cpu designers
-
+TODO ......
 
 \subsection{SMP Barrier Pairing}
 
@@ -384,7 +381,7 @@ cpu designers
 \subsubsection{Compiler Barriers}
 
 Used primarily to prevent the compiler from reordering instructions
-the \lstinline{barrier()} is a genetar barrier. The
+the \lstinline{barrier()} is a general barrier. The
 \lstinline{ACCESS_ONCE()} macro is a weaker form of the barrier
 instruction which only affects instructions flagged by
 \lstinline{ACCESS_ONCE()}.
@@ -415,7 +412,7 @@ though safe in single threaded code will break concurrent code.
 
 \begin{itemize}
 \item Provide cache coherence for accesses from multiple CPUs to
-  single variable. Prevent compiler for reording loads and stores to
+  single variable. Prevent compiler for reordering loads and stores to
   same variable.
   
   Thus
@@ -472,6 +469,64 @@ dependency barriers imply a compiler barrier.
     \hline
   \end{tabular}
 \end{center}
+
+
+\subsubsection{Memory barrier and 80x86}
+
+  In 80x86 list of serializing instructions which act as memory
+  barriers:
+
+
+  \begin{itemize}
+    \item I/O port operations
+    \item instructions with lock byte
+    \item instructions affecting the IF flag in eflags register such as those instructions which write to registers
+      \begin{itemize}
+        \item control registers (cli)
+        \item system  registers (sti)
+        \item debug   registers          
+      \end {itemize}
+    \item Some instructions introduced in Pentium 4
+      \begin{itemize}
+        \item lfence - read barriers
+        \item sfence - write barries
+        \item mfence - read write barriers
+      \end{itemize}
+    \item Speial instructions - iret terminating interrupt or exception handler                  
+  \end{itemize}
+  
+%%\end{itemize}
+
+Read barriers maintain the serial order of read instructions, write
+barriers maitain serial order of write instructions.
+
+\begin{center}
+  \begin{tabular}{ l | l }    
+    \hline
+    Function/Macors & Description \\ \hline
+    mb() & Memory barrier for MP and UP \\ 
+    rmb() & Read memory barrier for MP and UP  \\ 
+    wmb() &  Write memory barrier for MP and UP \\
+    smp\_mb() &  Memory barrier for MP only \\
+    smp\_rmb() &  Read memory barrier for MP only \\
+    smp\_wmb() &  Write memory barrier for MP only \\
+    \hline
+  \end{tabular}
+\end{center}
+  Macro expansions on  80x86
+
+
+  \begin{tabular}{ l | p{5 cm} }    
+    \hline
+    Function/Macors & Description \\ \hline
+    mb() &  \\ 
+    rmb() & asm volatile ("lfence") or asm volatile ("lock;addl 0,0(\%\%esp)":::"memory")  \\ 
+    wmb() & barrier()- intel never reorders write memory access only need an optimization barrier  \\
+    smp\_mb() &   \\
+    smp\_rmb() &  \\
+    smp\_wmb() &  \\
+    \hline
+  \end{tabular}
 
 The usage of mandatory barrier may be used to control MMIO effects
 since they affect the order in which memory operations appear to
@@ -614,77 +669,6 @@ include:
 \end{center}
 
 
-
-
-\begin{itemize}
-  
-  
-\item{Memory barrier}
-
-  In 80x86 list of serializing instructions which act as memory
-  barriers:
-
-
-  \begin{itemize}
-    \item I/O port operations
-    \item instructions with lock byte
-    \item instructions affecting the IF flag in eflags register such as those instructions which write to registers
-      \begin{itemize}
-        \item control registers (cli)
-        \item system  registers (sti)
-        \item debug   registers          
-      \end {itemize}
-    \item Some instructions introduced in Pentium 4
-      \begin{itemize}
-        \item lfence - read barriers
-        \item sfence - write barries
-        \item mfence - read write barriers
-      \end{itemize}
-    \item Speial instructions - iret terminating interrupt or exception handler                  
-  \end{itemize}
-  
-\end{itemize}
-
-Read barriers maintain the serial order of read instructions, write
-barriers maitain serial order of write instructions.
-
-\begin{center}
-  \begin{tabular}{ l | l }    
-    \hline
-    Function/Macors & Description \\ \hline
-    mb() & Memory barrier for MP and UP \\ 
-    rmb() & Read memory barrier for MP and UP  \\ 
-    wmb() &  Write memory barrier for MP and UP \\
-    smp\_mb() &  Memory barrier for MP only \\
-    smp\_rmb() &  Read memory barrier for MP only \\
-    smp\_wmb() &  Write memory barrier for MP only \\
-    \hline
-  \end{tabular}
-\end{center}
-  Macro expansions on  80x86
-
-
-  \begin{tabular}{ l | p{5 cm} }    
-    \hline
-    Function/Macors & Description \\ \hline
-    mb() &  \\ 
-    rmb() & asm volatile ("lfence") or asm volatile ("lock;addl 0,0(\%\%esp)":::"memory")  \\ 
-    wmb() & barrier()- intel never reorders write memory access only need an optimization barrier  \\
-    smp\_mb() &   \\
-    smp\_rmb() &  \\
-    smp\_wmb() &  \\
-    \hline
-  \end{tabular}
-
-All atomic operations act as memory barriers since they use the lock byte.
-
-
-\subsection{Atomic Operations}
-
-Atomic read-modify-write instructions are executed atomically by a CPU
-hardware via a single instruction which is executed without
-interruptions by other CPUs.
-
 \subsubsection{Atomic Operations 80x86}
 
 \begin{itemize}
@@ -703,6 +687,9 @@ interruptions by other CPUs.
 
 \end{itemize}
 
+All atomic operations act as memory barriers since they use the lock
+byte.
+
 
 \subsection{Spinlock}
 
@@ -718,7 +705,7 @@ of two fields:
     preemption.    
 \end{itemize}
 
-Some functions that initialize, acquire and relsease spin locks are
+Some functions that initialize, acquire and releases spin locks are
 given in the table.
 
   \begin{center}
@@ -814,7 +801,7 @@ executed.
 
 \subsubsection{Read/Write Spin Locks}
 
-Allows serveral simultaneous reads of the same data structure as long
+Allows several simultaneous reads of the same data structure as long
 as no kernel control path modifies it. Writer control paths acquire
 write locks granting exclusive access. Ability to perform concurrent
 reads improves system performance.
@@ -822,12 +809,12 @@ reads improves system performance.
 Read/Write spinlocks are represented by \lstinline{rwlock_t} structure
 with a 32-bit lock field
 
-The bit field \lstinline{lock} is devided into a counter and a flag
+The bit field \lstinline{lock} is divided into a counter and a flag
 \begin{itemize}
 \item \textbf{counter} 24 bit field , Number of kernel control paths
   in reading in the critical section.
   \item \textbf{flag} An unlocked flag at bit 24. Set when there are no
-    control paths in critical section. othersize cleared.
+    control paths in critical section. otherwise cleared.
 \end{itemize}
 
 Thus lock is \emph{0x01000000} when spin lock idle and
@@ -887,7 +874,7 @@ be advisable to turn off preemptions for per CPU variables.
     per\_cpu(name,cpu) & Selects element for CPU cpu \\ 
     get\_cpu\_var(name) &  Disables kernel premeption \\
     put\_cpu\_var(name) &  Re-enables kernel premeption \\
-    alloc\_percpu(ptr) &  dynamcally allocatee cpu variable \\
+    alloc\_percpu(ptr) &  dynamcally allocate cpu variable \\
     free\_percpu(ptr) &  Release a dynamcally allocated cpu variable \\
     \hline
   \end{tabular}
@@ -895,8 +882,8 @@ be advisable to turn off preemptions for per CPU variables.
 
 \section{MESI Cache Coherency Protocol}
 
-Cache-coherency protocls manage cache-line states to prevent
-inconsitent states or lost data. MESI stats for "modified",
+Cache-coherency protocols manage cache-line states to prevent
+inconsistent states or lost data. MESI stats for "modified",
 "exclusive", "shared" and "invalid". Which represent the four states
 assigned to cache lines in this protocol.The MESI protocol is a
 protocol used to implement cache and memory coherency amongst multiple
@@ -917,7 +904,7 @@ that a cache line can be in.
 \item Exclusive
     \begin{itemize}
     \item Cache Line is present only in current CPU
-    \item Cache Line is cliean (matches main memory)
+    \item Cache Line is clean (matches main memory)
     \end{itemize}
     
   \item Shared
@@ -964,7 +951,7 @@ architecture.
 \subsection{MESI Transitions Table}
 
 We give a tabular description of transitions involved in the MESI
-protocl.
+protocol.
 
 
 
@@ -973,7 +960,7 @@ protocl.
     \# & Start  & End   & Descriptions \\
     \hline
     a & Modified  & Exclusive &
-    Cache line is written back to memmory but CPU retains exclusive 
+    Cache line is written back to memory but CPU retains exclusive 
     owner ship of and right to modify it. Requires "writeback" 
     message\\
     \hline
@@ -1018,14 +1005,14 @@ protocl.
     h & Shared & Exclusive & 
 
     This CPU is about to write to shared item. Transmits an invalidate
-    message to other CPUs Waits for full "invlidate acknowledge"
-    repsonse. Or all other CPUs had to drop the cache line making this
+    message to other CPUs Waits for full "invalidate acknowledge"
+    response. Or all other CPUs had to drop the cache line making this
     CPU the sole owner. \\
     \hline
     i & Exclusive & Invalid & 
 
     Another CPU ran an atomic read-modify-write in cache line held by
-    current CPU. Received a "read invalididate". This CPU will respond
+    current CPU. Received a "read invalidate". This CPU will respond
     with a "read response" and "invalidate acknowledge" message.   \\
 
     \hline
@@ -1048,9 +1035,9 @@ protocl.
     \hline
     l & Shared & Invalid &
     
-    Some ohter cpu does a store to data item. On the reception of a
+    Some other cpu does a store to data item. On the reception of a
     "invalidate" message. Responds with a "invalidate acknowledge"
-    messaage. \\
+    message. \\
 
     \hline    
   \end{tabular*}
@@ -1061,17 +1048,17 @@ Store performance for a first write is poor.
 
 \subsubsection{Store Buffers}
 Added between CPU and cache
-\subsubsection{Store Forewarding}
+\subsubsection{Store Forwarding}
 \subsubsection{Store Buffers and Memory Barriers}
 
 
-\subsection{Summary \& Acknowledgement}
+\subsection{Summary \& Acknowledgment}
 
 Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
 by Bovett and the mememory barrier documentation part of the linux
 kernel David Howells and Paul E. McKenney. Any errors are entirely my
 own. For people looking for definitive and trustworthy accounts
-looking at these sources is recomended.
+looking at these sources is recommended.
 
 \begin{thebibliography}{9}
 
