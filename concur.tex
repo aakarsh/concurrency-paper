@@ -14,7 +14,12 @@
 \usepackage{latexsym}
 \usepackage{amssymb}
 \usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{color}
 \usepackage{listings}
+
+
+\graphicspath{ {images/} }
 
 \tolerance=1000
 \providecommand{\alert}[1]{\textbf{#1}}
@@ -25,6 +30,34 @@
 
 \begin{document}
 
+\lstdefinestyle{customc}{
+%  basicstyle=\footnotesize,       % the size of the fonts that are used for the code
+  numbers=right,                   % where to put the line-numbers
+  numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+  stepnumber=1,                   % the step between two line-numbers. If it is 1 each line will be numbered
+  numbersep=5pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  frame=single,           % adds a frame around the code
+  tabsize=1,          % sets default tabsize to 2 spaces
+  captionpos=b,           % sets the caption-position to bottom
+  breaklines=true,        % sets automatic line breaking
+  breakatwhitespace=false,    % sets if automatic breaks should only happen at whitespace
+  escapeinside={\%*}{*)}          % if you want to add a comment within your code
+  %% belowcaptionskip=1\baselineskip,
+  %% breaklines=true,
+  %% frame=L,
+  xleftmargin=\parindent,
+  language=C,
+  %% showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  %% identifierstyle=\color{black},
+  stringstyle=\color{orange},
+}
 
 \lstdefinelanguage{anX86} {
 	morekeywords={
@@ -33,14 +66,15 @@
 		negl,andl,orl,xorl,notl,shrl,shll,sarl,sall,ret,leave,
 		call,setg,setl,setge,setle,setne,sete,movzbl,
 		eax,ebx,ecx,edx,edi,esi,ebp,esp,al,bl,cl,dl,
-                pause,lock,decb,jns,jle,jmp,cmpb,movb,xchg,xchgb
+                pause,lock,decb,jns,jle,jmp,cmpb,movb,xchg,xchgb,lea
 	},
 	sensitive=true,
 	morecomment=[l]{\#},
 	morestring=[b]"
 }
+\lstset{escapechar=@,style=customc}
+\lstset{language=C}
 
-\lstset{language=C}  
 \maketitle
 
 \setcounter{tocdepth}{3}
@@ -162,8 +196,8 @@ Things which cannot be assumed
 
 \begin{itemize}
 \item it \textbf{must not} be assumed that compilers will not reorder
-  memory references not protected with ACCESS\_ONCE(). Without
-  ACCESS\_ONCE() the compiler can perform transformations see memory
+  memory references not protected with \lstinline{ACCESS_ONCE()}. Without
+  \lstinline{ACCESS_ONCE()} the compiler can perform transformations see memory
   barriers.
 \item it \textbf{must not} be assumed that independent loads and
   stored will be issued in any given order.
@@ -184,8 +218,6 @@ Things that we anti-guarantees (bad stuff will happen):
 \item Guarantees only apply to properly aligned and sized scalar
   variables. Same size as "char","short","int" and "long".  
 \end{itemize}
-
-
 
 \subsection{Memory Barrier}
 
@@ -388,7 +420,7 @@ instruction which only affects instructions flagged by
 
 Can be implemented using the
 
-\emph{barrier()} macro expanding to \emph{asm volatile"":::memory}
+\lstinline{barrier()} macro expanding to \lstinline{asm volatile"":::memory}
 
 Tells the compiler to insert empty assembly fragment. While the
 volatile keyword forbids the compiler from shuffling the instruction.
@@ -461,9 +493,9 @@ dependency barriers imply a compiler barrier.
   \begin{tabular}{ l| l | l }    
     \hline
     Type & Mandatory & SMP Conditional \\ \hline
-    GENERAL & mb() & \lstinline{smb_mb()} \\ 
-    WRITE & wmb() & \lstinline{smp_wmb()}  \\ 
-    READ &  rmb() & \lstinline{smp_rmb()}  \\
+    GENERAL & \lstinline{mb()} & \lstinline{smb_mb()} \\ 
+    WRITE & \lstinline{wmb()} & \lstinline{smp_wmb()}  \\ 
+    READ &  \lstinline{rmb()} & \lstinline{smp_rmb()}  \\
     DATA DEPENDENCY &  \lstinline{read_barrier_depends()} & \lstinline{smp_read_barrier_depends()} \\
     \hline
   \end{tabular}
@@ -503,19 +535,19 @@ barriers maitain serial order of write instructions.
   \begin{tabular}{ l | l }    
     \hline
     Function/Macors & Description \\ \hline
-    mb() & Memory barrier for MP and UP \\ 
-    rmb() & Read memory barrier for MP and UP  \\ 
-    wmb() &  Write memory barrier for MP and UP \\
-    smp\_mb() &  Memory barrier for MP only \\
-    smp\_rmb() &  Read memory barrier for MP only \\
-    smp\_wmb() &  Write memory barrier for MP only \\
+    \lstinline{mb()} & Memory barrier for MP and UP \\ 
+    \lstinline{rmb()} & Read memory barrier for MP and UP  \\ 
+    \lstinline{wmb()} &  Write memory barrier for MP and UP \\
+    \lstinline{smp_mb()} &  Memory barrier for MP only \\
+    \lstinline{smp_rmb()} &  Read memory barrier for MP only \\
+    \lstinline{smp_wmb()} &  Write memory barrier for MP only \\
     \hline
   \end{tabular}
 \end{center}
   Macro expansions on  80x86
 
 
-  \begin{tabular}{ l | p{5 cm} }    
+  \begin{tabular}{ l | p{9 cm} }    
     \hline
     Function/Macors & Description \\ \hline
     mb() & \lstinline{asm volatile("mfence":::"memory")}  \\  \hline
@@ -526,12 +558,11 @@ barriers maitain serial order of write instructions.
   asm volatile ("lock;addl 0,0(%esp)":::"memory")
 \end{lstlisting}
       \\ \hline
-      wmb() & barrier() 
+      \lstinline{wmb()} & \lstinline{barrier()}
       Intel never reorders write memory access so we get only a compiler barrier here.  \\ \hline
-    smp\_mb()  &   \\
-    smp\_rmb() &  \\
-    smp\_wmb() &  \\
-    \hline
+    \lstinline{smp_mb()}  & \lstinline{mb()}   \\ \hline
+    \lstinline{smp_rmb()} &  \lstinline{barrier()} or \lstinline{rmb()} depending on \lstinline{CONFIG_X86_PPRO_FENCE}\\ \hline
+    \lstinline{smp_wmb()} & \lstinline{barrier()} \\     \hline
   \end{tabular}
 
 The usage of mandatory barrier may be used to control MMIO effects
@@ -539,14 +570,14 @@ since they affect the order in which memory operations appear to
 device and prevent the compiler and CPU from reordering them.
 
 
-\subsection{Implicit Kerenl Memory Barriers}
+\subsection{Implicit Kernel Memory Barriers}
 
 Many locking and scheduling functions imply memory barriers. We
 consider the some of these implicit barriers.
 
 \subsubsection{Acquiring Functions}
 
-Following are exmples of acquiring functions inside the kernel.
+Following are examples of acquiring functions inside the kernel.
 
 \begin{itemize}
   \item Spin Locks
@@ -591,7 +622,7 @@ Following are exmples of acquiring functions inside the kernel.
   
 \end{itemize}
 
-Due to the possiblity that pre-ACQUIRE operations may happen after
+Due to the possibility that pre-ACQUIRE operations may happen after
 ACQUIRE and post-RELEASE may happen before RELEASE thus accesses may
 cross.
 
@@ -628,7 +659,7 @@ May run as :
 
 \subsubsection{Interrupt Disabling Functions}
 
-Functions disabling/enablign interrupts will only act as compiler
+Functions disabling/enabling interrupts will only act as compiler
 barriers. 
 
 \subsubsection{Sleep and Wake up Functions}
@@ -645,7 +676,7 @@ Many atomic operations imply full memory barriers and are heavily
 relied upon in the kernel.
 
 Any atomic operation that modifies state in memory and returns
-information about the state simplies SMP-conditional memory barrier.
+information about the state implies SMP-conditional memory barrier.
 on each side of the operation. That is \lstinline{smp_mb()}.
 
 Atomic operations which use which imply SMP general memory barrier
@@ -674,6 +705,9 @@ include:
   \end{tabular}
 \end{center}
 
+These operations of aften used for implementing ACQUIRE and RELEASE
+operations and maintaining reference counters.
+
 
 \subsubsection{Atomic Operations 80x86}
 
@@ -684,10 +718,10 @@ include:
     case in uniprocessor systems.
 
   \item Read-modify-write instructions whose opcode is prefixed by the
-    \emph{lock byte} (\emph{0xf0}) are atomic on multiprocessor
+    \emph{lock byte} (\lstinline{0xf0}) are atomic on multiprocessor
     systems.  The lock byte will lock access to the mememory bus until
     the locking instruction finishes its operation.
-  \item Instructions prefixed by the \emph{rep} byte \emph{0xf2,0xf3}
+  \item Instructions prefixed by the \emph{rep} byte \lstinline{0xf2,0xf3}
     which forces instructions to be repeated are not atomic since the
     CPU checks interrupts before each iteration.
 
@@ -718,18 +752,18 @@ given in the table.
   \begin{tabular}{ |l | p{7cm}| }    
     \hline
     Function/Macors & Description \\ \hline
-    spin\_lock\_init() & Set spin lock to 1 (unlocked) \\
+    \lstinline{spin_lock_init()} & Set spin lock to 1 (unlocked) \\
     \hline
-    spin\_lock() &
+    \lstinline{spin_lock()} &
     Cycle until spinlock becomes 1(unlocked) then set it to 0 (locked) \\
     \hline
-    spin\_unlock() & Set the spin lock to 1 (unlocked) \\
+    \lstinline{spin_unlock()} & Set the spin lock to 1 (unlocked) \\
     \hline
-    spin\_unlock\_wait() & Wait until the spinlock becomes 1 (unlocked)  \\
+    \lstinline{spin_unlock_wait()} & Wait until the spinlock becomes 1 (unlocked)  \\
     \hline
-    spin\_is\_locked() & Return 0 if the spinlock is set to 1(unlocked) ; 1 otherwise  \\
+    \lstinline{spin_is_locked()} & Return 0 if the spinlock is set to 1(unlocked) ; 1 otherwise  \\
     \hline
-    spin\_trylock() &  Set the spin lock to 0 (locked), and return 1 if the previous value of the lock was 1; 0 otherwise\\
+    \lstinline{spin_trylock()} &  Set the spin lock to 0 (locked), and return 1 if the previous value of the lock was 1; 0 otherwise\\
     \hline
   \end{tabular}
   \end{center}
@@ -756,10 +790,10 @@ given in the table.
       spinlock.
         
     \item If failed then spin lock was not positive , invoke
-      \emph{preempt\_enable()} decrements the preeempt counter. which
+      \lstinline{preempt_enable()} decrements the preeempt counter. which
       if it goes to zero will allow the process to be scheduled out,
 
-    \item set the \emph{break\_lock} field to one. Allow another
+    \item set the \lstinline{break_lock} field to one. Allow another
       process to release spin lock prematurely
 
     \item Execute the wait cycle
@@ -848,8 +882,136 @@ the \lstinline{_raw_read_trylock()} function.
 \end{lstlisting}
 
 
+\subsection{RCU: Read-Copy-Update  }
 
 \subsection{Semaphores}
+
+Semaphores are an alternative mechanism to spinlock to implement
+critical sections in kernel control path, in that they do not allow a
+process to proceed unless the lock is open. But unlike spinlocks
+whenever a kernel control path tries to acquire a busy resource, the
+corresponding process is suspended. Thus semaphors should not be
+accessed from non-suspendable control paths like interrupt handlers
+and deferred functions.
+
+The \lstinline{struct semaphore} contains
+
+\begin{itemize}
+  
+\item \textbf{count} \\
+
+  An \lstinline{atomic_t} value. A positive value(greater than 0)
+  indicates the resource is free. Negative value indicates there is at
+  least one process waiting on the resource.
+
+\item \textbf{wait} \\
+
+  A wait queue contianing list of processes sleeping on the semaphore.
+  
+\item \textbf{sleepers} \\
+  A flag indicating if there exists a process sleeping on semaphores.    
+\end{itemize}
+
+Semaphores expected to be used enforce only single active control path
+in the critical region can be initalized using functions
+\lstinline{init_MUTEX()} and \lstinline{init_MUTEX_LOCKED()} or
+\lstinline{DECLARE_MUTEX} , \lstinline{DECLARE_MUTEX_LOCKED} for
+static allocation. The count in mutexes are not expected to exceed 1.
+
+% Consider acquiring/releasing 
+
+\subsubsection{Releasing Semaphores}
+
+A process reseases a semaphore by invoking \lstinline{up()}. Which on
+x86 performs equivalent of
+
+\begin{lstlisting}[language=anX86]
+  movl $sem->count,%ecx
+  lock; incl (%ecx)
+  jg 1f
+  lea %ecx,%eax
+  pushl %edx
+  pushl %ecx
+  call __up
+  popl %ecx
+  popl %edx
+1:
+\end{lstlisting}
+
+Where \lstinline{__up()} is the C function :
+
+\begin{lstlisting}
+__attribute__((regparm(3))) void __up(struct semaphore *sem)
+{
+  wake_up(&sem->wait);
+}  
+\end{lstlisting}
+
+The incrementation of the semaphore count and the test for semaphore
+count greter than 0 happens under atomic \lstinline{lock} ensuring the
+consistency of the value is mainted accorss multiple processors. If
+count is greater than 0 then one of the list of waiting process is
+woken up.
+
+
+\subsubsection{Acquiring Semaphores}
+
+Lock acquisition performs the equivalent of the following assembly
+instructions
+
+
+\begin{lstlisting}
+  down:
+   movl $sem->count,%ecx
+   lock; decl (%ecx);
+   jns 1f
+   lea %ecx, %eax
+   pushl %edx
+   pushl %ecx
+   call __down
+   popl %ecx
+   popl %edx
+ 1:
+\end{lstlisting}
+
+Where we decrement the semaphore count and test if the value is
+positive if not we have to queue the current process in the
+semaphore's wait list via the \lstinline{__down} function.
+
+\begin{lstlisting}
+__attribute__((regparm(3))) void __down(struct semaphore * sem)
+{
+  DECLARE_WAITQUEUE(wait, current);
+  unsigned long flags;
+  current->state = TASK_UNINTERRUPTIBLE;
+  spin_lock_irqsave(&sem->wait.lock, flags);
+  add_wait_queue_exclusive_locked(&sem->wait, &wait);
+  sem->sleepers++;
+  for (;;) {
+    if (!atomic_add_negative(sem->sleepers-1, &sem->count)) {
+      sem->sleepers = 0;
+      break;
+    }
+    sem->sleepers = 1;
+    spin_unlock_irqrestore(&sem->wait.lock, flags);
+    schedule();
+    spin_lock_irqsave(&sem->wait.lock, flags);
+    current->state = TASK_UNINTERRUPTIBLE;
+  }
+  remove_wait_queue_locked(&sem->wait, &wait);
+  wake_up_locked(&sem->wait);
+  spin_unlock_irqrestore(&sem->wait.lock, flags);
+  current->state = TASK_RUNNING;
+}
+\end{lstlisting}
+
+
+
+
+
+
+
+\subsubsection{Read/Write Semaphores}
 
 
 
@@ -876,12 +1038,12 @@ be advisable to turn off preemptions for per CPU variables.
     
     \hline
     Function/Macors & Descriptions \\ \hline
-    DEFINE\_PER\_CPU(type,name) & Statically Allocate a per-CPU called type \\ 
-    per\_cpu(name,cpu) & Selects element for CPU cpu \\ 
-    get\_cpu\_var(name) &  Disables kernel premeption \\
-    put\_cpu\_var(name) &  Re-enables kernel premeption \\
-    alloc\_percpu(ptr) &  dynamcally allocate cpu variable \\
-    free\_percpu(ptr) &  Release a dynamcally allocated cpu variable \\
+    \lstinline{DEFINE_PER_CPU(type,name)} & Statically Allocate a per-CPU called type \\ 
+    \lstinline{per_cpu(name,cpu)} & Selects element for CPU cpu \\ 
+    \lstinline{get_cpu_var(name)} &  Disables kernel premeption \\
+    \lstinline{put_cpu_var(name)} &  Re-enables kernel premeption \\
+    \lstinline{alloc_percpu(ptr)} &  dynamcally allocate cpu variable \\
+    \lstinline{free_percpu(ptr)} &  Release a dynamcally allocated cpu variable \\
     \hline
   \end{tabular}
 \end{center}
@@ -961,7 +1123,7 @@ protocol.
 
 
 
-\begin{tabular*}{0.75\textwidth} {| l | l | l | p{5cm}| }    
+\begin{tabular} {| l | l | l | p{9cm}| }    
     \hline
     \# & Start  & End   & Descriptions \\
     \hline
@@ -1046,7 +1208,12 @@ protocol.
     message. \\
 
     \hline    
-  \end{tabular*}
+\end{tabular}
+
+
+%\begin{figure}[h]
+%\includegraphics{mesi.xbb}
+%\end{figure}
 
 
 Store performance for a first write is poor.
