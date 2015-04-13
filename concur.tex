@@ -119,7 +119,7 @@ counters meant to keep track number of times kernel preemption count
 as well as softirq and hardirq counts.
 
 \begin{center}
-  \begin{tabular}{ l | l }    
+  \begin{tabular}{| l | l | }    
     \hline
     Bits & Description                    \\ \hline
     0-7 & Preemption counter (max=255)    \\ 
@@ -136,7 +136,7 @@ CPU has local interrupts enabled.
 Key Macors Dealing with preemption counter are given as 
 
 \begin{center}
-  \begin{tabular}{ l | p{9 cm} }    
+  \begin{tabular}{| l | p{9 cm} |}    
     \hline
     Bits & Description                    \\ \hline
     \lstinline{preempt_count()} & Select the \lstinline{preempt count} from \lstinline{thread_info}    \\ 
@@ -234,9 +234,9 @@ memory accesses.
 
 Types of performance tricks memory barriers may protect against are
 \begin{itemize}
-\item reordering and deferral of combination of memory operations
-\item speculative loads
-\item speculative branch prediction and caching
+\item Reordering and deferral of combination of memory operations
+\item Speculative loads
+\item Speculative branch prediction and caching
 \end{itemize}
 
 Memory barrier types include
@@ -261,7 +261,7 @@ Memory barrier types include
   Weaker form of read barrier. Two loads such that the second depends
   on result of first ( first load retrieves the address which to which
   second load is directed). Ensure the target of second load is
-  updated before first load accessed (??)
+  updated before first load accessed %% (??)
 
   Partial ordering on inter-dependent loads only. No effect on
   independent loads or overlapping loads. Has no affect on stores.
@@ -288,7 +288,7 @@ Memory barrier types include
 
   Imply data dependency barrier.
 
-  Should be paired with write barriers ??
+  Should be paired with write barriers %%??
 
   
   
@@ -336,11 +336,9 @@ BUT, CPU 2's perception of P may be updated before its perception of B
 leading to the following situation.
 
 \begin{lstlisting}
-(Q = &B) and (D = 2 ) ???
+(Q = &B) and (D = 2 ) 
 \end{lstlisting}
-
-
-
+%% ???
 
 \begin{lstlisting}
         CPU 1		      CPU 2
@@ -483,7 +481,7 @@ uni-processor compiled systems. All memory barriers except data
 dependency barriers imply a compiler barrier.
 
 \begin{center}
-  \begin{tabular}{ l| l | l }    
+  \begin{tabular}{| l| l | l | }    
     \hline
     Type & Mandatory & SMP Conditional \\ \hline
     GENERAL & \lstinline{mb()} & \lstinline{smb_mb()} \\ 
@@ -525,7 +523,7 @@ Read barriers maintain the serial order of read instructions, write
 barriers maintain serial order of write instructions.
 
 \begin{center}
-  \begin{tabular}{ l | l }    
+  \begin{tabular}{| l | l | }    
     \hline
     Function/Macors & Description \\ \hline
     \lstinline{mb()} & Memory barrier for MP and UP \\ 
@@ -539,8 +537,8 @@ barriers maintain serial order of write instructions.
 \end{center}
   Macro expansions on  80x86
 
-
-  \begin{tabular}{ l | p{9 cm} }    
+\begin{center} 
+  \begin{tabular}{ | l | p{9 cm} | }    
     \hline
     Function/Macors & Description \\ \hline
     mb() & \lstinline{asm volatile("mfence":::"memory")}  \\  \hline
@@ -557,10 +555,12 @@ barriers maintain serial order of write instructions.
     \lstinline{smp_rmb()} &  \lstinline{barrier()} or \lstinline{rmb()} depending on \lstinline{CONFIG_X86_PPRO_FENCE}\\ \hline
     \lstinline{smp_wmb()} & \lstinline{barrier()} \\     \hline
   \end{tabular}
+\end{center}
 
-The usage of mandatory barrier may be used to control MMIO effects
-since they affect the order in which memory operations appear to
-device and prevent the compiler and CPU from reordering them.
+
+%% The usage of mandatory barrier may be used to control MMIO effects
+%% since they affect the order in which memory operations appear to
+%% device and prevent the compiler and CPU from reordering them.
 
 
 \subsection{Implicit Kernel Memory Barriers}
@@ -615,38 +615,38 @@ Following are examples of acquiring functions inside the kernel.
   
 \end{itemize}
 
-Due to the possibility that pre-ACQUIRE operations may happen after
-ACQUIRE and post-RELEASE may happen before RELEASE thus accesses may
-cross.
+%% Due to the possibility that pre-ACQUIRE operations may happen after
+%% ACQUIRE and post-RELEASE may happen before RELEASE thus accesses may
+%% cross.
 
-\begin{lstlisting}
-  *A = a;
-  ACQUIRE M
-  RELEASE M
-  *B = b;
-\end{lstlisting}
+%% \begin{lstlisting}
+%%   *A = a;
+%%   ACQUIRE M
+%%   RELEASE M
+%%   *B = b;
+%% \end{lstlisting}
 
-May get run as
+%% May get run as
 
-\begin{lstlisting}
-  ACQUIRE M, STORE *B, STORE *A, RELEASE M
-\end{lstlisting}
+%% \begin{lstlisting}
+%%   ACQUIRE M, STORE *B, STORE *A, RELEASE M
+%% \end{lstlisting}
 
-Also RELEASE followed by ACQUIRE does not imply a full memory barrier.
+%% Also RELEASE followed by ACQUIRE does not imply a full memory barrier.
 
-\begin{lstlisting}  
-	*A = a;
-	RELEASE M
-	ACQUIRE N
-	*B = b;
-\end{lstlisting}
+%% \begin{lstlisting}  
+%% 	*A = a;
+%% 	RELEASE M
+%% 	ACQUIRE N
+%% 	*B = b;
+%% \end{lstlisting}
 
-May run as :
+%% May run as :
 
 
-\begin{lstlisting}
-  ACQUIRE N, STORE *B, STORE *A, RELEASE M
-\end{lstlisting}
+%% \begin{lstlisting}
+%%   ACQUIRE N, STORE *B, STORE *A, RELEASE M
+%% \end{lstlisting}
 
 
 
@@ -666,11 +666,11 @@ Any atomic operation that modifies state in memory and returns
 information about the state implies SMP-conditional memory barrier.
 on each side of the operation. That is \lstinline{smp_mb()}.
 
-Atomic operations which use which imply SMP general memory barrier
-include:
+Some atomic operations that imply SMP general memory barrier are given
+in the table.
 
 \begin{center}
-  \begin{tabular}{ l | l }    
+  \begin{tabular}{| l | l |}    
     \hline
     Atomic Operations &  \\ \hline
     \lstinline{xchg()}; & \\
@@ -706,7 +706,7 @@ operations and maintaining reference counters.
 
   \item Read-modify-write instructions whose opcode is prefixed by the
     \emph{lock byte} (\lstinline{0xf0}) are atomic on multiprocessor
-    systems.  The lock byte will lock access to the mememory bus until
+    systems.  The lock byte will lock access to the memory bus until
     the locking instruction finishes its operation.
   \item Instructions prefixed by the \emph{rep} byte \lstinline{0xf2,0xf3}
     which forces instructions to be repeated are not atomic since the
@@ -984,47 +984,45 @@ __attribute__((regparm(3))) void __down(struct semaphore * sem)
 
 The decrement and test of the semaphore count happens under the
 \lstinline{lock} instruction. If the count is negative the process is
-suspended and added to the semaphores wait queue.
+suspended and added to the semaphores wait queue. 
+
+  %% Modify current process state from \lstinline{TASK_RUNNING} to
+  %%   \lstinline{TASK_UNINTERRUPTIBLE}
+  %% \item Add the processes to the semaphore wait queue under a spin
+  %%   lock.
+
+Consider some common cases :
+
+%% \item The \lstinline{sleepers} which in the fast path is 0 if no
+%% process is in the wait queue is incremented
+
 
 \begin{itemize}
+\item \textbf{MUTEX semaphore is open} \\
+  \lstinline{(count == 1 && sleepers == 0)} \\  
+  We set the count to 0 acquiring the semaphore. Skip over the
+  execution of the \lstinline{__down()}. This is the fastest path.
 
+\item \textbf{MUTEX semaphore is closed, no sleeping process} \\
+  \lstinline{(count == 0 && sleepers == 0)} \\
+  
+  We decrement the count(new value is -1) and invoke
+  \lstinline{__down()} . We enter the loop where if count is still
+  -1 then set the sleepers to 1. Only we were sleeping thus we can
+  go back to sleep. Otherwise if count is non-negative we can set
+  the sleepers to 0. And begin the task of scheduling oneself for
+  execution by changing process state to \lstinline{TASK_RUNNING}
 
-  \item Modify current process state from \lstinline{TASK_RUNNING} to
-    \lstinline{TASK_UNINTERRUPTIBLE}
+\item \textbf{MUTEX semaphore is closed with additional sleepers} \\
+  (count  <= -1 , sleepers >= 1) \\
+  
+  We check if the semaphore got released before the
+  \lstinline{__down()}.
 
-  \item Add the processes to the semaphore wait queue under a spin
-    lock.
-    
-  \item The \lstinline{sleepers} which in the fast path is 0 if no
-    process is in the wait queue is incremented
-    
-    We consider the cases
-    \begin{itemize}
-    \item MUTEX semaphore is open ( count == 1 sleepers == 0) \\
-      
-      We set the count to 0. Skip over the execution of the
-      \lstinline{__down()}. This is considered the fastest path.
-
-    \item MUTEX semaphore is closed, no sleeping process
-      ( count == 0 , sleepers == 0) \\
-
-      We decrement the count(new value is -1) and invoke
-      \lstinline{__down()} . We enter the loop where if count is still
-      -1 then set the sleepers to 1. Only we were sleeping thus we can
-      go back to sleep. Otherwise if count is non-negative we can set
-      the sleepers to 0. And begin the task of scheduling oneself for
-      execution by changing process state to \lstinline{TASK_RUNNING}
-
-    \item MUTEX semaphore is closed with additional sleepers
-      (count  <= -1 , sleepers >= 1) \\
-      
-      We check if the semaphore got released before the
-      \lstinline{__down()}.
-
-      
-      
-    \end{itemize}
+  
+  
 \end{itemize}
+
 
 
 
@@ -1241,8 +1239,8 @@ protocol.
 
 Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
 by Bovett and the memory barrier documentation part of the Linux
-kernel David Howells and Paul E. McKenney. Any errors are entirely my
-own. For people looking for definitive and trustworthy accounts
+kernel by David Howells and Paul E. McKenney. Any errors are entirely
+my own. For people looking for definitive and trustworthy accounts
 looking at these sources is recommended.
 
 \begin{thebibliography}{9}
