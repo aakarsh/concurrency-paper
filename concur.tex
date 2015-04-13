@@ -477,8 +477,7 @@ directly affect the CPU, which may still reorder instructions.
 
 All memory barriers except data dependency barriers imply compiler
 barrier. SMP memory barriers are reduced to compiler barriers on
-uni-processor compiled systems. All memory barriers except data
-dependency barriers imply a compiler barrier.
+uni-processor compiled systems. 
 
 \begin{center}
   \begin{tabular}{| l| l | l | }    
@@ -570,7 +569,7 @@ consider the some of these implicit barriers.
 
 \subsubsection{Acquiring Functions}
 
-Following are examples of acquiring functions inside the kernel.
+Following are examples of acquiring/release functions inside the kernel.
 
 \begin{itemize}
   \item Spin Locks
@@ -581,8 +580,8 @@ Following are examples of acquiring functions inside the kernel.
   \item RCU
 \end{itemize}
 
-\begin{itemize}
-  
+
+\begin{itemize}  
 \item \textbf{ACQUIRE Implication} \\
 
   Post-ACQUIRE operations \emph{will be completed} after after ACQUIRE
@@ -607,7 +606,7 @@ Following are examples of acquiring functions inside the kernel.
 \item \textbf{ACQUIRE vs RELEASE Implication} \\
 
   All ACQUIRE operations issued before RELEASE operation will be
-  completed before RElEASe operation.
+  completed before RELEASE operation.
 
 \item \textbf{Failed conditional ACQUIRE Implication} \\
 
@@ -649,8 +648,9 @@ Following are examples of acquiring functions inside the kernel.
 %% \end{lstlisting}
 
 
-
 \subsubsection{Interrupt Disabling Functions}
+
+
 Functions disabling/enabling interrupts will only act as compiler
 barriers. 
 
