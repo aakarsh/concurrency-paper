@@ -216,7 +216,9 @@ Things that we anti-guarantees (bad stuff will happen):
   lock. Update of one field can be corrupted by another by compiler.
   
 \item Guarantees only apply to properly aligned and sized scalar
-  variables. Same size as "char","short","int" and "long".  
+  variables. Same size as \lstinline{char},
+  \lstinline{short},\lstinline{int} and \lstinline{long}.
+  
 \end{itemize}
 
 \subsection{Memory Barrier}
@@ -314,14 +316,17 @@ To better understand need for data dependency barriers consider
 the following sequence of instructions:
 
 \begin{lstlisting}
-	CPU 1		      CPU 2
-	===============	      ===============
-	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
-	B = 4;
-	<write barrier>
-	ACCESS_ONCE(P) = &B
-			      Q = ACCESS_ONCE(P);
-			      D = *Q;
+  { A == 1, B == 2, C = 3, P == &A, Q == &C }
+  CPU 1
+  ===============
+  B = 4;
+  <write barrier>
+  ACCESS_ONCE(P) = &B
+
+ CPU 2
+ ===============        
+ Q = ACCESS_ONCE(P);
+ D = *Q;
 \end{lstlisting}
 
 While the write barrier will guarantee that all writes seen by both
@@ -340,22 +345,25 @@ leading to the following situation.
 \end{lstlisting}
 %% ???
 
-\begin{lstlisting}
-        CPU 1		      CPU 2
-	===============	      ===============
-	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
-	B = 4;
-	<write barrier>
-	ACCESS_ONCE(P) = &B
-			      Q = ACCESS_ONCE(P);
-			      <data dependency barrier>
-			      D = *Q;  
-\end{lstlisting}
-
 The data dependency barrier forces the assignment of B to show up on
-processor 2 when Q is assigned a pointer to B.
+processor 2 when Q is assigned a pointer to B. Thus the previous
+listing is transfored to the following :
 
-%% \subsubsection{Multiple Reads}
+\begin{lstlisting}
+  { A == 1, B == 2, C = 3, P == &A, Q == &C }
+  
+  CPU 1
+  ===============
+  B = 4;
+  <write barrier>
+  ACCESS_ONCE(P) = &B
+
+  CPU 2
+  ===============	                     
+  Q = ACCESS_ONCE(P);
+  <data dependency barrier>
+  D = *Q;  
+\end{lstlisting}
 
 \subsection{Control Dependencies}
 
@@ -377,7 +385,6 @@ load from a.
 The solution for this is to impose a read barrier to ensure that b is
 read
 
-
 While LOAD is speculated the STORES are NOT speculated. Thus the
 ordering semantics of following will not be affected.
 
@@ -393,7 +400,7 @@ The \lstinline{ACCESS_ONCE} directive is aimed at the compiler to
 prevent it from merging separate loads from 'a' and separate stores to
 'b'.
 
-TODO ......
+%%TODO ......
 
 %% \subsection{SMP Barrier Pairing}
 %% \subsection{Read Memory Barriers vs Load Speculation}
@@ -461,9 +468,7 @@ though safe in single threaded code will break concurrent code.
 			do_something_with(tmp);
   \end{lstlisting}
 
-\item 
-  
-\item
+
 \end{itemize}
 
 It is not necessary to use \lstinline{ACCESS_ONCE()} on variables
@@ -926,11 +931,11 @@ __attribute__((regparm(3))) void __up(struct semaphore *sem)
 }  
 \end{lstlisting}
 
-The incrementation of the semaphore count and the test for semaphore
-count greater than 0 happens under atomic \lstinline{lock} ensuring the
-consistency of the value is maintained across multiple processors. If
-count is greater than 0 then one of the list of waiting process is
-woken up.
+The incrementing of the semaphore count and the test for semaphore
+count greater than 0 happens under atomic \lstinline{lock} ensuring
+the consistency of the value is maintained across multiple
+processors. If count is greater than 0 then one of the list of waiting
+process is woken up.
 
 \subsubsection{Acquiring Semaphores}
 
@@ -996,7 +1001,6 @@ Consider some common cases :
 %% \item The \lstinline{sleepers} which in the fast path is 0 if no
 %% process is in the wait queue is incremented
 
-
 \begin{itemize}
 \item \textbf{MUTEX semaphore is open} \\
   \lstinline{(count == 1 && sleepers == 0)} \\  
@@ -1007,22 +1011,43 @@ Consider some common cases :
   \lstinline{(count == 0 && sleepers == 0)} \\
   
   We decrement the count(new value is -1) and invoke
-  \lstinline{__down()} . We enter the loop where if count is still
-  -1 then set the sleepers to 1. Only we were sleeping thus we can
-  go back to sleep. Otherwise if count is non-negative we can set
-  the sleepers to 0. And begin the task of scheduling oneself for
-  execution by changing process state to \lstinline{TASK_RUNNING}
+  \lstinline{__down()} .
+
+  The \lstinline{atomic_add_negative} adds the
+  \lstinline{sem->sleepers-1} which is -1 to the
+  \lstinline{sem->count} (which if nothing has changed is -1). If we
+  are lucky the lock may have opened in which case we simple break out
+  of the sleepy loop.
+
+  Otherwise we set the \lstinline{sem->sleepers} flag to true and
+  schedule ourselves out allowing the loop to get rescheduled at a
+  later point at which point we will again perform the atomic test for
+  sleepers and exit if necessary.
+
 
 \item \textbf{MUTEX semaphore is closed with additional sleepers} \\
-  (count  <= -1 , sleepers >= 1) \\
-  
-  We check if the semaphore got released before the
-  \lstinline{__down()}.
+  (count  == -1 , sleepers == 1) \\
 
-  
-  
+  When invoked while the semaphore already has a sleeper the
+  \lstinline{__down()} will decrement the count to -2. Temporariy
+  increment sleeper to 2. Check the count is still negative. If its
+  negeative then we reset the sleepers flag to be the boolean 1.
+
+  However if the count is positive we will again clear the spleepers
+  flag and break from waiting loop.  
 \end{itemize}
 
+Semaphores thus are optimized for the case where they are generally
+found in open state. 
+
+\begin{itemize}
+  \item Not performing a jump in the \lstinline{up()} if the semaphore
+    wait queue is empty. Simply incrementing the semaphore count
+    branching to continue execution.
+
+  \item Not performing a jump if semaphore is open in the
+    \lstinline{down()}. Simply branching to continue execution.    
+\end{itemize}
 
 
 
@@ -1069,7 +1094,7 @@ inconsistent states or lost data. MESI stats for "modified",
 "exclusive", "shared" and "invalid". Which represent the four states
 assigned to cache lines in this protocol.The MESI protocol is a
 protocol used to implement cache and memory coherency amongst multiple
-CPUs. \cite{Birdetal2001}
+CPUs. %%\cite{Birdetal2001}
 
 Two bits are added to each cache line which represent the four states
 that a cache line can be in.
@@ -1136,7 +1161,7 @@ We give a tabular description of transitions involved in the MESI
 protocol.
 
 
-
+\begin{center}
 \begin{tabular} {| l | l | l | p{9cm}| }    
     \hline
     \# & Start  & End   & Descriptions \\
@@ -1223,6 +1248,7 @@ protocol.
 
     \hline    
 \end{tabular}
+\end{center}
 
 
 %\begin{figure}[h]
