@@ -98,7 +98,7 @@ Process running in Kernel Mode can be replaced by another process.
 The main reason for making a kernel preemptive is to reduce the
 dispatch latency of user mode processes (the time between when they
 become runnable and begin running).  Process switches happens via
-the\lstinline{switch_to_macro}.
+the \lstinline{switch_to_macro}.
 
 Kernel premption is enabled and disabled via the
 \lstinline{prempt_count} in the \lstinline{thread_info}. A task is
@@ -432,7 +432,7 @@ Effects of \lstinline{barrier()}:
   \item Prevent compiler from reordering accesses following barrier()
     with those preceding them them.
 
-  \item Within loop, foce compiler to lad variables used in loop
+  \item Within loop, force compiler to load variables used in loop
     conditional on each pass through loop.    
 \end{itemize}
 
@@ -719,8 +719,8 @@ operations and maintaining reference counters.
 
 \end{itemize}
 
-All atomic operations act as memory barriers since they use the lock
-byte.
+%%All atomic operations act as memory barriers since they use the lock
+%%byte.
 
 
 \subsection{Spinlock}
@@ -1089,11 +1089,13 @@ found in open state.
 \section{MESI Cache Coherency Protocol}
 
 Cache-coherency protocols manage cache-line states to prevent
-inconsistent states or lost data. MESI stats for "modified",
-"exclusive", "shared" and "invalid". Which represent the four states
-assigned to cache lines in this protocol.The MESI protocol is a
-protocol used to implement cache and memory coherency amongst multiple
-CPUs. %%\cite{Birdetal2001}
+inconsistent states or lost in multi-processor systems.  Cache
+coherency protocols are fundamental to the implemetation of atomic
+read-modify-write accross multiple procssers each using its own
+internal cache while accessing shared memory resource.
+
+MESI stats for "modified", "exclusive", "shared" and "invalid". Which
+represent the four states assigned to cache lines in this protocol.
 
 Two bits are added to each cache line which represent the four states
 that a cache line can be in.
@@ -1148,11 +1150,6 @@ messages on the bus.
   memory. This message might get snooped by other processors to mark
   cache lines as "modified"  
 \end{itemize}
-
-%% Thus we see the fractal nature of distributed system where message
-%% passing is implemented at different levels of the systems
-%% architecture.
-
 
 \subsection{MESI Transitions Table}
 
