@@ -357,8 +357,7 @@ leading to the following situation.
 The data dependency barrier forces the assignment of B to show up on
 processor 2 when Q is assigned a pointer to B.
 
-\subsubsection{Multiple Reads}
-
+%% \subsubsection{Multiple Reads}
 
 \subsection{Control Dependencies}
 
@@ -366,11 +365,11 @@ Control dependencies are those which require a full read memory
 barrier where a data dependency barrier will simply not suffice.
 
 \begin{lstlisting}
-  	q = ACCESS_ONCE(a);
-	if (q) {
-		<data dependency barrier>  /* BUG: No data dependency!!! */
-		p = ACCESS_ONCE(b);
-	}
+q = ACCESS_ONCE(a);
+if (q) {
+  <data dependency barrier>  /* BUG: No data dependency!!! */
+  p = ACCESS_ONCE(b);
+}
 \end{lstlisting}
 
 Here CPU may attempt to short circuit in an attempt to predict the
@@ -385,10 +384,10 @@ While LOAD is speculated the STORES are NOT speculated. Thus the
 ordering semantics of following will not be affected.
 
 \begin{lstlisting}
-	q = ACCESS_ONCE(a);
-	if (q) {
-		ACCESS_ONCE(b) = p;
-	}  
+  q = ACCESS_ONCE(a);
+  if (q) {
+    ACCESS_ONCE(b) = p;
+  }  
 \end{lstlisting}
 
 
@@ -398,15 +397,9 @@ prevent it from merging separate loads from 'a' and separate stores to
 
 TODO ......
 
-\subsection{SMP Barrier Pairing}
-
-
-
-
-\subsection{Read Memory Barriers vs Load Speculation}
-
-\subsection{Transitivity}
-
+%% \subsection{SMP Barrier Pairing}
+%% \subsection{Read Memory Barriers vs Load Speculation}
+%% \subsection{Transitivity}
 
 \subsection{Explicit Kernel Barriers}
 
@@ -658,17 +651,11 @@ May run as :
 
 
 \subsubsection{Interrupt Disabling Functions}
-
 Functions disabling/enabling interrupts will only act as compiler
 barriers. 
 
-\subsubsection{Sleep and Wake up Functions}
-
-
-
-\subsubsection{Miscellaneous Functions}
-
-
+%% \subsubsection{Sleep and Wake up Functions}
+%% \subsubsection{Miscellaneous Functions}
 
 \subsection{Atomic Operations}
 
@@ -839,50 +826,48 @@ Then invoking \lstinline{preempt_enable()}. on x86 the lock byte is
 not used since since write-only access in memory are atomically
 executed.
 
-\subsubsection{Read/Write Spin Locks}
+%% \subsubsection{Read/Write Spin Locks}
 
-Allows several simultaneous reads of the same data structure as long
-as no kernel control path modifies it. Writer control paths acquire
-write locks granting exclusive access. Ability to perform concurrent
-reads improves system performance.
+%% Allows several simultaneous reads of the same data structure as long
+%% as no kernel control path modifies it. Writer control paths acquire
+%% write locks granting exclusive access. Ability to perform concurrent
+%% reads improves system performance.
 
-Read/Write spinlocks are represented by \lstinline{rwlock_t} structure
-with a 32-bit lock field
+%% Read/Write spinlocks are represented by \lstinline{rwlock_t} structure
+%% with a 32-bit lock field
 
-The bit field \lstinline{lock} is divided into a counter and a flag
-\begin{itemize}
-\item \textbf{counter} 24 bit field , Number of kernel control paths
-  in reading in the critical section.
-  \item \textbf{flag} An unlocked flag at bit 24. Set when there are no
-    control paths in critical section. otherwise cleared.
-\end{itemize}
+%% The bit field \lstinline{lock} is divided into a counter and a flag
+%% \begin{itemize}
+%% \item \textbf{counter} 24 bit field , Number of kernel control paths
+%%   in reading in the critical section.
+%%   \item \textbf{flag} An unlocked flag at bit 24. Set when there are no
+%%     control paths in critical section. otherwise cleared.
+%% \end{itemize}
 
-Thus lock is \emph{0x01000000} when spin lock idle and
-\emph{0x00000000} when writing. and any number after \emph{0x00ffffff}
-when one thread is reading , \emph{0x00fffffe} when on thread is
-reading, i.e stored in twos complement format.
+%% Thus lock is \emph{0x01000000} when spin lock idle and
+%% \emph{0x00000000} when writing. and any number after \emph{0x00ffffff}
+%% when one thread is reading , \emph{0x00fffffe} when on thread is
+%% reading, i.e stored in twos complement format.
 
-Like ordinary spinlock we also include a \lstinline{break_lock} field.
+%% Like ordinary spinlock we also include a \lstinline{break_lock} field.
 
-\subsection{Reading with read/write spinlock}
-
-When acquiring the read lock the \lstinline{read_lock} macro will use
-the \lstinline{_raw_read_trylock()} function.
-
-\begin{lstlisting}
-  int _raw_read_trylock(rwlock_t *lock)
-  {
-    atomic_t *count = (atomic_t *)lock->lock;
-    atomic_dec(count);
-    if (atomic_read(count) >= 0)
-       return 1;
-    atomic_inc(count);
-    return 0
-   }
-\end{lstlisting}
+%% \subsection{Reading with read/write spinlock}
+%% When acquiring the read lock the \lstinline{read_lock} macro will use
+%% the \lstinline{_raw_read_trylock()} function.
+%% \begin{lstlisting}
+%%   int _raw_read_trylock(rwlock_t *lock)
+%%   {
+%%     atomic_t *count = (atomic_t *)lock->lock;
+%%     atomic_dec(count);
+%%     if (atomic_read(count) >= 0)
+%%        return 1;
+%%     atomic_inc(count);
+%%     return 0
+%%    }
+%% \end{lstlisting}
 
 
-\subsection{RCU: Read-Copy-Update  }
+%% \subsection{RCU: Read-Copy-Update  }
 
 \subsection{Semaphores}
 
@@ -896,22 +881,16 @@ and deferred functions.
 
 The \lstinline{struct semaphore} contains
 
-\begin{itemize}
-  
-\item \textbf{count} \\
-
+\begin{itemize}  
+\item \lstinline{count} \\
   An \lstinline{atomic_t} value. A positive value(greater than 0)
   indicates the resource is free. Negative value indicates there is at
   least one process waiting on the resource.
-
-\item \textbf{wait} \\
-
-  A wait queue contianing list of processes sleeping on the semaphore.
-  
-\item \textbf{sleepers} \\
+\item \lstinline{wait} \\
+  A wait queue contianing list of processes sleeping on the semaphore.  
+\item \lstinline{sleepers} \\
   A flag indicating if there exists a process sleeping on semaphores.    
 \end{itemize}
-
 Semaphores expected to be used enforce only single active control path
 in the critical region can be initalized using functions
 \lstinline{init_MUTEX()} and \lstinline{init_MUTEX_LOCKED()} or
@@ -953,12 +932,10 @@ consistency of the value is mainted accorss multiple processors. If
 count is greater than 0 then one of the list of waiting process is
 woken up.
 
-
 \subsubsection{Acquiring Semaphores}
 
 Lock acquisition performs the equivalent of the following assembly
 instructions
-
 
 \begin{lstlisting}
   down:
@@ -1006,47 +983,82 @@ __attribute__((regparm(3))) void __down(struct semaphore * sem)
 \end{lstlisting}
 
 
+The decrement and test of the semaphore count happens under the
+\lstinline{lock} instruction. If the count count is negative the
+process is suspended and added to the semaphores wait queue.
 
 
+\begin{itemize}
+  \item Modify current process state from \lstinline{TASK_RUNNING} to
+    \lstinline{TASK_UNINTERRUPTIBLE}
 
-
-
-\subsubsection{Read/Write Semaphores}
-
-
-
-\subsection{Per-CPU Variables}
-
-A per-CPU variable is an array of data structures one per cpu. Each CPU
-can read and modify its own elements without race.
-
-These are aligned in main memory so that each one falls in different
-line of hardware cache. Concurrent access does not lead to cache line
-snooping and invalidation.
-
-Though per-cpu variables allow for data structures to be protected
-against different CPUS they cannot be used to protect against
-asynchronous accesses coming through the same CPU.
-
-Accessing a per-CPU variable needs to be aware that premption might
-cause the process to get migrated onto another CPU and thus it might
-be advisable to turn off preemptions for per CPU variables.
-
-
-\begin{center}
-  \begin{tabular}{ l | l }
+  \item Add the processs to the semaphore wait queue under a spin
+    lock. 
+  \item The \lstinline{sleepers} which in the fast path is 0 if no
+    process is in the wait queue is incremented
     
-    \hline
-    Function/Macors & Descriptions \\ \hline
-    \lstinline{DEFINE_PER_CPU(type,name)} & Statically Allocate a per-CPU called type \\ 
-    \lstinline{per_cpu(name,cpu)} & Selects element for CPU cpu \\ 
-    \lstinline{get_cpu_var(name)} &  Disables kernel premeption \\
-    \lstinline{put_cpu_var(name)} &  Re-enables kernel premeption \\
-    \lstinline{alloc_percpu(ptr)} &  dynamcally allocate cpu variable \\
-    \lstinline{free_percpu(ptr)} &  Release a dynamcally allocated cpu variable \\
-    \hline
-  \end{tabular}
-\end{center}
+    We consider the cases
+    \begin{itemize}
+    \item MUTEX semaphore is open ( count == 1 sleepers == 0) \\
+      
+      We set the count to 0. Skip over the execution of the
+      \lstinline{__down()}. This is considered the fast path.
+
+
+    \item MUTEX semaphore is closed, no sleeping process ( count == 0 , sleepers == 0) \\
+      
+      We decrement the count(new value is -1) and invoke
+      \lstinline{__down()} . We enter the loop where if count is still
+      -1 then set the sleepers to 1. Only we were sleeping thus we can
+      go back to sleep. Otherwise if count is non-negative we can set
+      the sleepers to 0. And begin the task of sceduling ourself for
+      execution by changing process tate to \lstinline{TASK_RUNNING}
+
+    \item MUTEX semaphore is closed with additional sleepers (count  <= -1 , sleepers >= 1) \\
+
+      We check if the semaphore got released before the \lstinline{__down()}. 
+      
+      
+    \end{itemize}
+\end{itemize}
+
+
+
+\subsubsection{Interrupt Disabling} 
+
+
+%% \subsection{Per-CPU Variables}
+
+%% A per-CPU variable is an array of data structures one per cpu. Each CPU
+%% can read and modify its own elements without race.
+
+%% These are aligned in main memory so that each one falls in different
+%% line of hardware cache. Concurrent access does not lead to cache line
+%% snooping and invalidation.
+
+%% Though per-cpu variables allow for data structures to be protected
+%% against different CPUS they cannot be used to protect against
+%% asynchronous accesses coming through the same CPU.
+
+%% Accessing a per-CPU variable needs to be aware that premption might
+%% cause the process to get migrated onto another CPU and thus it might
+%% be advisable to turn off preemptions for per CPU variables.
+
+
+%% \begin{center}
+%%   \begin{tabular}{ l | l }
+    
+%%     \hline
+%%     Function/Macors & Descriptions \\ \hline
+%%     \lstinline{DEFINE_PER_CPU(type,name)} & Statically Allocate a per-CPU called type \\ 
+%%     \lstinline{per_cpu(name,cpu)} & Selects element for CPU cpu \\ 
+%%     \lstinline{get_cpu_var(name)} &  Disables kernel premeption \\
+%%     \lstinline{put_cpu_var(name)} &  Re-enables kernel premeption \\
+%%     \lstinline{alloc_percpu(ptr)} &  dynamcally allocate cpu variable \\
+%%     \lstinline{free_percpu(ptr)} &  Release a dynamcally allocated cpu variable \\
+%%     \hline
+%%   \end{tabular}
+%% \end{center}
 
 \section{MESI Cache Coherency Protocol}
 
@@ -1215,14 +1227,11 @@ protocol.
 %\includegraphics{mesi.xbb}
 %\end{figure}
 
-
-Store performance for a first write is poor.
-
-
-\subsubsection{Store Buffers}
-Added between CPU and cache
-\subsubsection{Store Forwarding}
-\subsubsection{Store Buffers and Memory Barriers}
+%% Store performance for a first write is poor.
+%% \subsubsection{Store Buffers}
+%% Added between CPU and cache
+%% \subsubsection{Store Forwarding}
+%% \subsubsection{Store Buffers and Memory Barriers}
 
 
 \subsection{Summary \& Acknowledgment}
