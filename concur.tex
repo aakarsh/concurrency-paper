@@ -267,7 +267,7 @@ Memory barrier types include
   independent loads or overlapping loads. Has no affect on stores.
 
   A data dependency barrier issued by the CPU is thus a line in the
-  sand such that for any loads preceding it, if that load touchs one
+  sand such that for any loads preceding it, if that load touches one
   of a sequence of stores from another CPU then by the time the
   barrier completes(the line is crossed) the effect of all stores
   prior to that load will be perceptible by any loads issued after the
@@ -522,7 +522,7 @@ dependency barriers imply a compiler barrier.
 %%\end{itemize}
 
 Read barriers maintain the serial order of read instructions, write
-barriers maitain serial order of write instructions.
+barriers maintain serial order of write instructions.
 
 \begin{center}
   \begin{tabular}{ l | l }    
@@ -611,7 +611,7 @@ Following are examples of acquiring functions inside the kernel.
 
 \item \textbf{Failed conditional ACQUIRE Implication} \\
 
-  Failed lock operations dont imply any barrier.
+  Failed lock operations don't imply any barrier.
   
 \end{itemize}
 
@@ -692,7 +692,7 @@ include:
   \end{tabular}
 \end{center}
 
-These operations of aften used for implementing ACQUIRE and RELEASE
+These operations of often used for implementing ACQUIRE and RELEASE
 operations and maintaining reference counters.
 
 
@@ -887,12 +887,12 @@ The \lstinline{struct semaphore} contains
   indicates the resource is free. Negative value indicates there is at
   least one process waiting on the resource.
 \item \lstinline{wait} \\
-  A wait queue contianing list of processes sleeping on the semaphore.  
+  A wait queue containing list of processes sleeping on the semaphore.  
 \item \lstinline{sleepers} \\
   A flag indicating if there exists a process sleeping on semaphores.    
 \end{itemize}
 Semaphores expected to be used enforce only single active control path
-in the critical region can be initalized using functions
+in the critical region can be initialized using functions
 \lstinline{init_MUTEX()} and \lstinline{init_MUTEX_LOCKED()} or
 \lstinline{DECLARE_MUTEX} , \lstinline{DECLARE_MUTEX_LOCKED} for
 static allocation. The count in mutexes are not expected to exceed 1.
@@ -901,7 +901,7 @@ static allocation. The count in mutexes are not expected to exceed 1.
 
 \subsubsection{Releasing Semaphores}
 
-A process reseases a semaphore by invoking \lstinline{up()}. Which on
+A process releases a semaphore by invoking \lstinline{up()}. Which on
 x86 performs equivalent of
 
 \begin{lstlisting}[language=anX86]
@@ -927,8 +927,8 @@ __attribute__((regparm(3))) void __up(struct semaphore *sem)
 \end{lstlisting}
 
 The incrementation of the semaphore count and the test for semaphore
-count greter than 0 happens under atomic \lstinline{lock} ensuring the
-consistency of the value is mainted accorss multiple processors. If
+count greater than 0 happens under atomic \lstinline{lock} ensuring the
+consistency of the value is maintained across multiple processors. If
 count is greater than 0 then one of the list of waiting process is
 woken up.
 
@@ -982,18 +982,19 @@ __attribute__((regparm(3))) void __down(struct semaphore * sem)
 }
 \end{lstlisting}
 
-
 The decrement and test of the semaphore count happens under the
-\lstinline{lock} instruction. If the count count is negative the
-process is suspended and added to the semaphores wait queue.
-
+\lstinline{lock} instruction. If the count is negative the process is
+suspended and added to the semaphores wait queue.
 
 \begin{itemize}
+
+
   \item Modify current process state from \lstinline{TASK_RUNNING} to
     \lstinline{TASK_UNINTERRUPTIBLE}
 
-  \item Add the processs to the semaphore wait queue under a spin
-    lock. 
+  \item Add the processes to the semaphore wait queue under a spin
+    lock.
+    
   \item The \lstinline{sleepers} which in the fast path is 0 if no
     process is in the wait queue is incremented
     
@@ -1002,21 +1003,24 @@ process is suspended and added to the semaphores wait queue.
     \item MUTEX semaphore is open ( count == 1 sleepers == 0) \\
       
       We set the count to 0. Skip over the execution of the
-      \lstinline{__down()}. This is considered the fast path.
+      \lstinline{__down()}. This is considered the fastest path.
 
+    \item MUTEX semaphore is closed, no sleeping process
+      ( count == 0 , sleepers == 0) \\
 
-    \item MUTEX semaphore is closed, no sleeping process ( count == 0 , sleepers == 0) \\
-      
       We decrement the count(new value is -1) and invoke
       \lstinline{__down()} . We enter the loop where if count is still
       -1 then set the sleepers to 1. Only we were sleeping thus we can
       go back to sleep. Otherwise if count is non-negative we can set
-      the sleepers to 0. And begin the task of sceduling ourself for
-      execution by changing process tate to \lstinline{TASK_RUNNING}
+      the sleepers to 0. And begin the task of scheduling oneself for
+      execution by changing process state to \lstinline{TASK_RUNNING}
 
-    \item MUTEX semaphore is closed with additional sleepers (count  <= -1 , sleepers >= 1) \\
+    \item MUTEX semaphore is closed with additional sleepers
+      (count  <= -1 , sleepers >= 1) \\
+      
+      We check if the semaphore got released before the
+      \lstinline{__down()}.
 
-      We check if the semaphore got released before the \lstinline{__down()}. 
       
       
     \end{itemize}
@@ -1118,7 +1122,7 @@ messages on the bus.
   processors. Combination of read and invalidate. Responses are read
   response and invalidate acknowledge
 
-\item \textbf{Writeback} contnet: Address of and data of write back to
+\item \textbf{Writeback} content: Address of and data of write back to
   memory. This message might get snooped by other processors to mark
   cache lines as "modified"  
 \end{itemize}
@@ -1162,13 +1166,13 @@ protocol.
     e & Shared & Modified & 
 
     CPU does read-modify write one data item that was
-    read-only. Transmits a "invalidate" messagee. Wait for invalidate
-    acknowlege from all other CPUs.    
+    read-only. Transmits a "invalidate" message. Wait for invalidate
+    acknowledge from all other CPUs.    
     \\
     \hline
     f & Modified & Shared &
 
-    Some other CPU reads from our cache line suplied from this
+    Some other CPU reads from our cache line supplied from this
     CPU. This CPU responds with a "read response" message.    
     \\    
     \hline
@@ -1226,7 +1230,6 @@ protocol.
 %\begin{figure}[h]
 %\includegraphics{mesi.xbb}
 %\end{figure}
-
 %% Store performance for a first write is poor.
 %% \subsubsection{Store Buffers}
 %% Added between CPU and cache
