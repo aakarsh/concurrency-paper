@@ -158,7 +158,7 @@ include
 
 \begin{itemize}
 \item \textbf{Per-CPU variables}
-  Use duplicate data structures for each cpu
+  Use duplicate data structures for each CPU
 \item \textbf{Atomic Operations}
   Atomically read-modify-write instruction to a counter
 \item \textbf{Memory Barrier}
@@ -875,7 +875,7 @@ Semaphores are an alternative mechanism to spinlock to implement
 critical sections in kernel control path, in that they do not allow a
 process to proceed unless the lock is open. But unlike spinlocks
 whenever a kernel control path tries to acquire a busy resource, the
-corresponding process is suspended. Thus semaphors should not be
+corresponding process is suspended. Thus semaphores should not be
 accessed from non-suspendable control paths like interrupt handlers
 and deferred functions.
 
@@ -1028,7 +1028,7 @@ suspended and added to the semaphores wait queue.
 
 
 
-\subsubsection{Interrupt Disabling} 
+%%\subsubsection{Interrupt Disabling} 
 
 
 %% \subsection{Per-CPU Variables}
@@ -1127,9 +1127,9 @@ messages on the bus.
   cache lines as "modified"  
 \end{itemize}
 
-Thus we see the fractal nature of distributed system where message
-passing is implemented at different levels of the systems
-architecture.
+%% Thus we see the fractal nature of distributed system where message
+%% passing is implemented at different levels of the systems
+%% architecture.
 
 
 \subsection{MESI Transitions Table}
@@ -1159,7 +1159,7 @@ protocol.
     d & Invalid & Modified &
     An atomic read-modify-write operation on a data item not present
     in the cache. Transmits a "read invalidate" response and gets
-    "read response". Cannot proceed until all cpus reply with
+    "read response". Cannot proceed until all CPUs reply with
     "invalidate acknowledge" response.    \\
 
     \hline
@@ -1181,7 +1181,7 @@ protocol.
 
 
     Some other CPU reads data in this cache line supplied from this
-    CPU or from memory. If this CPU retains a read-only copy. This cpu
+    CPU or from memory. If this CPU retains a read-only copy. This CPU
     will respond with a read response with requested data.
     
     \\
@@ -1219,7 +1219,7 @@ protocol.
     \hline
     l & Shared & Invalid &
     
-    Some other cpu does a store to data item. On the reception of a
+    Some other CPU does a store to data item. On the reception of a
     "invalidate" message. Responds with a "invalidate acknowledge"
     message. \\
 
@@ -1237,10 +1237,10 @@ protocol.
 %% \subsubsection{Store Buffers and Memory Barriers}
 
 
-\subsection{Summary \& Acknowledgment}
+\subsection{Summary and Acknowledgment}
 
 Lot of the text is adaptation of Chapter 5 of Linux Kernel Programming
-by Bovett and the mememory barrier documentation part of the linux
+by Bovett and the memory barrier documentation part of the Linux
 kernel David Howells and Paul E. McKenney. Any errors are entirely my
 own. For people looking for definitive and trustworthy accounts
 looking at these sources is recommended.
